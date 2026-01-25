@@ -1,0 +1,13 @@
+# virtualenv
+venv/
+.venv/
+
+# python
+__pycache__/
+*.pyc
+
+# banco local
+app/duo.db
+
+# configs locais
+.env
