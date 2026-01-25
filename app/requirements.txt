@@ -1,8 +1,0 @@
-fastapi
-uvicorn
-sqlalchemy
-python-multipart
-itsdangerous
-passlib
-jinja2
-psycopg2-binary
