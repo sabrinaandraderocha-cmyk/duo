@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Duo • Casal</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+  <main class="wrap">
+    <section class="card">
+      <h1 style="margin:0 0 6px 0;">Vincular casal</h1>
+      <p class="muted">Olá, <strong>{{ user.name }}</strong>.</p>
+
+      {% if error %}
+        <p class="empty" style="color:#991b1b; margin-top:10px;">{{ error }}</p>
+      {% endif %}
+
+      {% if couple %}
+        <p style="margin-top:12px;">
+          <strong>Código do casal:</strong> <span class="badge">{{ couple.code }}</span>
+        </p>
+        <p class="muted">Envie esse código para seu par entrar no Duo.</p>
+
+        {% if partner_name %}
+          <p style="margin-top:10px;">✅ Seu par: <strong>{{ partner_name }}</strong></p>
+        {% else %}
+          <p class="muted" style="margin-top:10px;">Aguardando seu par entrar com o código…</p>
+        {% endif %}
+
+        <a class="btn primary" href="/" style="display:inline-block; text-align:center;">Ir para o Duo</a>
+      {% else %}
+        <form method="post" action="/pair/create">
+          <button class="btn primary" type="submit">Criar nosso casal</button>
+        </form>
+
+        <hr style="margin:16px 0; border:0; border-top:1px solid #d8dee9;">
+
+        <form method="post" action="/pair/join">
+          <label>Entrar com código</label>
+          <input name="code" placeholder="ex: a1b2c3d4" required>
+
+          <button class="btn secondary" type="submit">Entrar no casal</button>
+        </form>
+      {% endif %}
+
+      <p class="muted" style="margin-top:12px;">
+        <a href="/logout"><strong>Sair</strong></a>
+      </p>
+    </section>
+  </main>
+</body>
+</html>

@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Duo • Criar conta</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body class="auth-body">
+  <main class="auth-wrap">
+    <section class="auth-card">
+      <div class="auth-head">
+        <div class="auth-logo">Duo 💙</div>
+        <h1 class="auth-title">Criar conta</h1>
+        <p class="auth-subtitle">
+          Um espaço para registrar momentos, gestos e afetos a dois.
+        </p>
+      </div>
+
+      {% if error %}
+        <div class="auth-alert">{{ error }}</div>
+      {% endif %}
+
+      <form method="post" action="/signup" class="auth-form">
+        <div class="auth-field">
+          <label for="name">Nome</label>
+          <input
+            id="name"
+            name="name"
+            placeholder="Ex.: Sabrina"
+            autocomplete="name"
+            required
+          >
+        </div>
+
+        <div class="auth-field">
+          <label for="email">E-mail</label>
+          <input
+            id="email"
+            name="email"
+            type="email"
+            placeholder="seuemail@exemplo.com"
+            autocomplete="email"
+            required
+          >
+        </div>
+
+        <div class="auth-field">
+          <label for="password">Senha</label>
+          <input
+            id="password"
+            name="password"
+            type="password"
+            placeholder="mínimo de 6 caracteres"
+            autocomplete="new-password"
+            required
+          >
+        </div>
+
+        <button class="btn primary auth-btn" type="submit">
+          Criar acesso
+        </button>
+      </form>
+
+      <div class="auth-footer">
+        <span class="muted">Já tem conta?</span>
+        <a class="auth-link" href="/login">Entrar</a>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

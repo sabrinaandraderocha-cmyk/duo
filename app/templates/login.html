@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Duo • Entrar</title>
+
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body class="auth-body">
+
+  <main class="auth-wrap">
+    <section class="auth-card">
+
+      <!-- Cabeçalho -->
+      <div class="auth-head">
+        <div class="auth-logo">Duo💙</div>
+
+        <p class="auth-subtitle">
+          Um diário de momentos a dois — com carinho, música e memória.
+        </p>
+      </div>
+
+      <!-- Erro -->
+      {% if error %}
+        <div class="auth-alert">
+          {{ error }}
+        </div>
+      {% endif %}
+
+      <!-- Formulário -->
+      <form method="post" action="/login" class="auth-form">
+
+        <div class="auth-field">
+          <label for="email">E-mail</label>
+          <input
+            id="email"
+            name="email"
+            type="email"
+            placeholder="seuemail@exemplo.com"
+            required
+            autofocus
+          >
+        </div>
+
+        <div class="auth-field">
+          <label for="password">Senha</label>
+          <input
+            id="password"
+            name="password"
+            type="password"
+            placeholder="••••••••"
+            required
+          >
+        </div>
+
+        <button class="btn primary auth-btn" type="submit">
+          Entrar
+        </button>
+      </form>
+
+      <!-- Rodapé -->
+      <div class="auth-footer">
+        <span class="muted">Ainda não tem conta?</span>
+        <a class="auth-link" href="/signup">Criar acesso</a>
+      </div>
+
+    </section>
+  </main>
+
+</body>
+</html>

@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Duo</title>
+
+  <link rel="manifest" href="/static/manifest.json">
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <h1>Duo 💙</h1>
+
+      <p class="subtitle">
+        Diário do casal:
+        <strong>{{ user.name }}</strong>
+        +
+        <strong>{{ partner_name or "Seu par" }}</strong>
+      </p>
+
+      <div class="topbar">
+        <span class="muted">
+          Logado como: <strong>{{ user.name }}</strong>
+        </span>
+        <a class="btn secondary" href="/logout">Sair</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <!-- =========================
+         REGISTRO DO MOMENTO
+         ========================= -->
+    <section class="card">
+      <div class="card-title">
+        <h2>Registro do momento (2 lados)</h2>
+        <p class="muted">
+          Cada um registra como viveu o dia — o momento do casal vai se compondo.
+        </p>
+      </div>
+
+      <div class="two-col">
+        <!-- =========================
+             LADO: VOCÊ (usuário logado)
+             ========================= -->
+        <form method="post" action="/save_side" class="side">
+          <input type="hidden" name="author" value="me">
+
+          <h3 id="meTitle">Parte de {{ user.name }}</h3>
+
+          <label>Como eu estou hoje</label>
+          <input name="mood" placeholder="ex: em paz, sensível, leve, cansada">
+
+          <label>Momento especial</label>
+          <textarea
+            name="moment_special"
+            placeholder="O que aconteceu hoje que foi significativo para você?"
+          ></textarea>
+
+          <label>Atitude do meu par que me fez sentir amor</label>
+          <textarea
+            name="love_action"
+            placeholder="Um gesto, uma escuta, um cuidado, uma presença…"
+          ></textarea>
+
+          <label>Hoje estou parecido com (personagem)</label>
+          <input name="character" placeholder="ex: Amélie, Ted Lasso">
+
+          <label>Música do dia</label>
+          <input name="music" placeholder="ex: Artista — Música">
+
+          <button class="btn primary" type="submit">
+            Salvar meu registro
+          </button>
+        </form>
+
+        <!-- =========================
+             LADO: PAR (nome do par vindo do backend)
+             ========================= -->
+        <form method="post" action="/save_side" class="side">
+          <input type="hidden" name="author" value="par">
+
+          <h3 id="parTitle">Parte de {{ partner_name or "Seu par" }}</h3>
+
+          <label>Como eu estou hoje</label>
+          <input name="mood" placeholder="ex: tranquilo(a), feliz, reflexivo(a)">
+
+          <label>Momento especial</label>
+          <textarea
+            name="moment_special"
+            placeholder="O que marcou o dia para você?"
+          ></textarea>
+
+          <label>Atitude do meu par que me fez sentir amor</label>
+          <textarea
+            name="love_action"
+            placeholder="O que o outro fez hoje que te tocou?"
+          ></textarea>
+
+          <label>Hoje estou parecido com (personagem)</label>
+          <input name="character" placeholder="ex: Fleabag, Ted Lasso">
+
+          <label>Música do dia</label>
+          <input name="music" placeholder="ex: Artista — Música">
+
+          <button class="btn secondary" type="submit">
+            Salvar registro do par
+          </button>
+        </form>
+      </div>
+    </section>
+
+    <!-- =========================
+         TIMELINE
+         ========================= -->
+    <section class="timeline">
+      <h2>Momentos do casal</h2>
+
+      {% if entries|length == 0 %}
+        <p class="empty">
+          Ainda não há registros. Quando vocês escrevem juntos, o Duo ganha vida 💙
+        </p>
+      {% endif %}
+
+      {% for e in entries %}
+        <article class="entry">
+          <div class="entry-head">
+            <div class="date">
+              <strong>Dia:</strong> {{ e.day }}
+              {% if e.created_at %}<span class="muted">• criado em {{ e.created_at }}</span>{% endif %}
+            </div>
+          </div>
+
+          <div class="two-col read">
+            <!-- =========================
+                 VISUALIZA: VOCÊ
+                 ========================= -->
+            <div class="side readside">
+              <h3 class="who">{{ user.name }}</h3>
+              {% if e.me.updated_at %}
+                <div class="tiny muted">atualizado em {{ e.me.updated_at }}</div>
+              {% endif %}
+
+              {% if e.me.mood %}
+                <div class="mood">Como estou: <strong>{{ e.me.mood }}</strong></div>
+              {% endif %}
+
+              {% if e.me.moment_special %}
+                <div class="block">
+                  <div class="block-title">✨ Momento especial</div>
+                  <p class="note">{{ e.me.moment_special }}</p>
+                </div>
+              {% endif %}
+
+              {% if e.me.love_action %}
+                <div class="block">
+                  <div class="block-title">💙 Me senti amada(o) quando…</div>
+                  <p class="note">{{ e.me.love_action }}</p>
+                </div>
+              {% endif %}
+
+              <div class="meta">
+                {% if e.me.character %}<div>🎬 <strong>Personagem:</strong> {{ e.me.character }}</div>{% endif %}
+                {% if e.me.music %}<div>🎵 <strong>Música:</strong> {{ e.me.music }}</div>{% endif %}
+              </div>
+
+              {% if not (e.me.mood or e.me.moment_special or e.me.love_action or e.me.character or e.me.music) %}
+                <p class="empty muted">Ainda não escreveu neste dia.</p>
+              {% endif %}
+            </div>
+
+            <!-- =========================
+                 VISUALIZA: PAR
+                 ========================= -->
+            <div class="side readside">
+              <h3 class="who">{{ partner_name or "Seu par" }}</h3>
+              {% if e.par.updated_at %}
+                <div class="tiny muted">atualizado em {{ e.par.updated_at }}</div>
+              {% endif %}
+
+              {% if e.par.mood %}
+                <div class="mood">Como estou: <strong>{{ e.par.mood }}</strong></div>
+              {% endif %}
+
+              {% if e.par.moment_special %}
+                <div class="block">
+                  <div class="block-title">✨ Momento especial</div>
+                  <p class="note">{{ e.par.moment_special }}</p>
+                </div>
+              {% endif %}
+
+              {% if e.par.love_action %}
+                <div class="block">
+                  <div class="block-title">💙 Me senti amada(o) quando…</div>
+                  <p class="note">{{ e.par.love_action }}</p>
+                </div>
+              {% endif %}
+
+              <div class="meta">
+                {% if e.par.character %}<div>🎬 <strong>Personagem:</strong> {{ e.par.character }}</div>{% endif %}
+                {% if e.par.music %}<div>🎵 <strong>Música:</strong> {{ e.par.music }}</div>{% endif %}
+              </div>
+
+              {% if not (e.par.mood or e.par.moment_special or e.par.love_action or e.par.character or e.par.music) %}
+                <p class="empty muted">Ainda não escreveu neste dia.</p>
+              {% endif %}
+            </div>
+          </div>
+        </article>
+      {% endfor %}
+    </section>
+  </main>
+
+  <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/static/js/sw.js");
+    }
+  </script>
+</body>
+</html>
