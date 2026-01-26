@@ -46,9 +46,10 @@
              LADO: VOCÊ (usuário logado)
              ========================= -->
         <form method="post" action="/save_side" class="side">
-          <input type="hidden" name="author" value="me">
+          <!-- ✅ AGORA: self/partner (não quebra com troca de login) -->
+          <input type="hidden" name="side" value="self">
 
-          <h3 id="meTitle">Parte de {{ user.name }}</h3>
+          <h3>Parte de {{ user.name }}</h3>
 
           <label>Como eu estou hoje</label>
           <input name="mood" placeholder="ex: em paz, sensível, leve, cansada">
@@ -77,12 +78,12 @@
         </form>
 
         <!-- =========================
-             LADO: PAR (nome do par vindo do backend)
+             LADO: PAR
              ========================= -->
         <form method="post" action="/save_side" class="side">
-          <input type="hidden" name="author" value="par">
+          <input type="hidden" name="side" value="partner">
 
-          <h3 id="parTitle">Parte de {{ partner_name or "Seu par" }}</h3>
+          <h3>Parte de {{ partner_name or "Seu par" }}</h3>
 
           <label>Como eu estou hoje</label>
           <input name="mood" placeholder="ex: tranquilo(a), feliz, reflexivo(a)">
@@ -129,7 +130,9 @@
           <div class="entry-head">
             <div class="date">
               <strong>Dia:</strong> {{ e.day }}
-              {% if e.created_at %}<span class="muted">• criado em {{ e.created_at }}</span>{% endif %}
+              {% if e.created_at %}
+                <span class="muted">• criado em {{ e.created_at[:10] }}</span>
+              {% endif %}
             </div>
           </div>
 
@@ -139,8 +142,9 @@
                  ========================= -->
             <div class="side readside">
               <h3 class="who">{{ user.name }}</h3>
+
               {% if e.me.updated_at %}
-                <div class="tiny muted">atualizado em {{ e.me.updated_at }}</div>
+                <div class="tiny muted">atualizado em {{ e.me.updated_at[:10] }}</div>
               {% endif %}
 
               {% if e.me.mood %}
@@ -176,8 +180,9 @@
                  ========================= -->
             <div class="side readside">
               <h3 class="who">{{ partner_name or "Seu par" }}</h3>
+
               {% if e.par.updated_at %}
-                <div class="tiny muted">atualizado em {{ e.par.updated_at }}</div>
+                <div class="tiny muted">atualizado em {{ e.par.updated_at[:10] }}</div>
               {% endif %}
 
               {% if e.par.mood %}
