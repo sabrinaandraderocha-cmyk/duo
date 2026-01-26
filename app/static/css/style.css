@@ -1,15 +1,24 @@
 :root{
-  --bg:#f4f6fa;
+  /* Base */
+  --bg:#f7f8fb;
   --card:#ffffff;
-  --border:#d8dee9;
+  --border:#e3e6ef;
 
+  /* Texto */
   --text:#1f2937;
   --muted:#6b7280;
 
+  /* Azul (identidade / apoio) */
   --accent:#1e3a8a;
-  --accent2:#1d4ed8;
+  --accent2:#2563eb;
 
-  --chip:#e8eefc;
+  /* Laranja (ação principal) */
+  --primary:#f97316;          /* laranja principal */
+  --primary-hover:#ea580c;    /* laranja hover */
+  --primary-soft:#fff1e6;     /* laranja suave */
+
+  --chip:#fff1e6;
+  --chip-border:#ffd7bf;
 }
 
 /* =========================
@@ -112,6 +121,12 @@ input, textarea, select{
   font-size: 14px;
 }
 
+input:focus, textarea:focus{
+  outline:none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(249,115,22,0.15);
+}
+
 textarea{
   min-height: 110px;
   resize: vertical;
@@ -141,19 +156,21 @@ textarea{
   margin-top: 14px;
 }
 
+/* 🔥 BOTÃO PRINCIPAL LARANJA */
 .btn.primary{
-  background: var(--accent);
+  background: var(--primary);
   color:#fff;
 }
 
 .btn.primary:hover{
-  background: var(--accent2);
+  background: var(--primary-hover);
 }
 
+/* Botão secundário */
 .btn.secondary{
-  background: var(--chip);
+  background: var(--primary-soft);
   color: var(--accent);
-  border: 1px solid #c7d6ff;
+  border: 1px solid var(--chip-border);
 }
 
 /* =========================
@@ -199,7 +216,7 @@ textarea{
    LEITURA (TIMELINE)
    ========================= */
 .readside{
-  background:#fbfcff;
+  background:#fffaf5;
 }
 
 .who{
@@ -227,9 +244,9 @@ textarea{
 .block{
   margin-top: 10px;
   padding: 10px 12px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--chip-border);
   border-radius: 12px;
-  background: #f9fbff;
+  background: var(--primary-soft);
 }
 
 .block-title{
@@ -239,7 +256,7 @@ textarea{
 }
 
 /* =========================
-   META (PERSONAGEM / MÚSICA)
+   META
    ========================= */
 .meta{
   display:flex;
@@ -249,25 +266,26 @@ textarea{
 }
 
 /* =========================
-   BADGES (se usar depois)
+   BADGES
    ========================= */
 .badge{
-  background: var(--chip);
+  background: var(--primary-soft);
   color: var(--accent);
-  border: 1px solid #c7d6ff;
+  border: 1px solid var(--chip-border);
   padding: 6px 10px;
   border-radius: 999px;
   font-weight: 800;
   font-size: 12px;
 }
+
 .badge.me{
-  background:#e8f3ff;
-  border-color:#cfe7ff;
+  background:#fff1e6;
 }
+
 .badge.par{
-  background:#f2e8ff;
-  border-color:#e2d2ff;
+  background:#fff7ed;
 }
+
 /* =========================
    AUTH (login/signup)
    ========================= */
@@ -292,10 +310,6 @@ textarea{
   box-shadow: 0 10px 30px rgba(17, 24, 39, 0.06);
 }
 
-.auth-head{
-  margin-bottom: 16px;
-}
-
 .auth-logo{
   font-weight: 900;
   color: var(--accent);
@@ -306,48 +320,24 @@ textarea{
 .auth-title{
   margin: 0;
   font-size: 26px;
-  letter-spacing: -0.2px;
 }
 
 .auth-subtitle{
   margin: 8px 0 0;
   color: var(--muted);
-  line-height: 1.45;
 }
 
 .auth-form{
   margin-top: 14px;
   display:flex;
   flex-direction: column;
-  gap: 12px; /* espaçamento entre campos */
-}
-
-.auth-field{
-  display:flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.auth-field label{
-  margin-top: 0; /* evita “aperto” */
-}
-
-.auth-field input{
-  padding: 12px 12px;
-  border-radius: 12px;
-}
-
-.auth-btn{
-  margin-top: 6px;
-  padding: 12px 14px;
-  border-radius: 12px;
+  gap: 12px;
 }
 
 .auth-footer{
   margin-top: 14px;
   display:flex;
   gap: 8px;
-  align-items:center;
   justify-content:center;
 }
 
