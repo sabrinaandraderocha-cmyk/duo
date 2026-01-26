@@ -125,7 +125,6 @@ def signup(
             status_code=400,
         )
 
-    # ✅ evita "cair" se a senha for grande / inválida (bcrypt 72 bytes etc.)
     try:
         pw_hash = hash_password(password)
     except ValueError as e:
@@ -194,7 +193,6 @@ def pair_create(request: Request, db: Session = Depends(get_db)):
             break
 
     if not code:
-        # fallback extremo (bem improvável)
         code = secrets.token_hex(6)
 
     couple = Couple(code=code)
@@ -319,7 +317,8 @@ def save_side(
     if not day:
         day = date.today().isoformat()
 
-    now = datetime.now().strftime("%d/%m/%Y %H:%M")
+    # ✅ AGORA SEM HORA
+    now = datetime.now().strftime("%d/%m/%Y")
 
     existing = (
         db.query(Entry)
