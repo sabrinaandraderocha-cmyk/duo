@@ -355,3 +355,31 @@ textarea{
   color: #991b1b;
   font-weight: 700;
 }
+/* =========================
+   MICROANIMAÇÕES (HOVER)
+   ========================= */
+
+/* cards principais */
+.card,
+.entry,
+.side{
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    border-color 0.18s ease;
+}
+
+/* efeito ao passar o mouse */
+.card:hover,
+.entry:hover,
+.side:hover{
+  transform: translateY(-3px);
+  box-shadow: 0 12px 28px rgba(249, 115, 22, 0.15);
+  border-color: var(--primary);
+}
+
+/* leitura da timeline um pouco mais sutil */
+.readside:hover{
+  transform: translateY(-2px);
+  box-shadow: 0 10px 22px rgba(249, 115, 22, 0.12);
+}
