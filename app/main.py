@@ -59,14 +59,46 @@ def empty_side() -> dict:
         "updated_at": "",
     }
 
-def get_partner_name(db: Session, couple_id: int, my_user_id: int) -> str | None:
-    partner = (
+def get_roles(db: Session, couple_id: int, my_user_id: int) -> dict:
+    """
+    Define papéis dentro do casal:
+    - O primeiro usuário (menor id) é o "A"
+    - O segundo usuário é o "B"
+
+    No banco, continuamos salvando Entry.author como "me" e "par".
+    Mas para quem está logado, "me" deve significar "meu lado".
+
+    Retorna:
+      self_author: qual author do banco corresponde ao "meu lado" (me/par)
+      partner_author: qual author do banco corresponde ao "lado do parceiro" (par/me)
+      partner_name: nome do parceiro (se existir)
+    """
+    users = (
         db.query(User)
-        .filter(User.couple_id == couple_id, User.id != my_user_id)
+        .filter(User.couple_id == couple_id)
         .order_by(User.id.asc())
-        .first()
+        .all()
     )
-    return partner.name if partner else None
+
+    if not users:
+        return {"self_author": "me", "partner_author": "par", "partner_name": None}
+
+    first = users[0]
+    second = users[1] if len(users) > 1 else None
+
+    if my_user_id == first.id:
+        return {
+            "self_author": "me",
+            "partner_author": "par",
+            "partner_name": second.name if second else None,
+        }
+    else:
+        # Quem não é o primeiro usuário, enxerga invertido:
+        return {
+            "self_author": "par",
+            "partner_author": "me",
+            "partner_name": first.name,
+        }
 
 
 # =========================
@@ -168,7 +200,10 @@ def pair_page(request: Request, db: Session = Depends(get_db)):
         return redirect_to("/login")
 
     couple = db.get(Couple, u.couple_id) if u.couple_id else None
-    partner_name = get_partner_name(db, u.couple_id, u.id) if u.couple_id else None
+    partner_name = None
+    if u.couple_id:
+        roles = get_roles(db, u.couple_id, u.id)
+        partner_name = roles["partner_name"]
 
     return templates.TemplateResponse(
         "pair.html",
@@ -243,7 +278,10 @@ def home(request: Request, db: Session = Depends(get_db)):
     if not u.couple_id:
         return redirect_to("/pair")
 
-    partner_name = get_partner_name(db, u.couple_id, u.id)
+    roles = get_roles(db, u.couple_id, u.id)
+    partner_name = roles["partner_name"]
+    self_author = roles["self_author"]
+    partner_author = roles["partner_author"]
 
     entries = (
         db.query(Entry)
@@ -252,6 +290,7 @@ def home(request: Request, db: Session = Depends(get_db)):
         .all()
     )
 
+    # organiza pro template como "por dia", com me/par (mas "me" = lado de quem está logado)
     by_day: dict[str, dict] = {}
     for e in entries:
         d = by_day.setdefault(
@@ -268,9 +307,10 @@ def home(request: Request, db: Session = Depends(get_db)):
             "updated_at": e.updated_at or "",
         }
 
-        if e.author == "me":
+        # ✅ MAPEIA CONFORME QUEM ESTÁ LOGADO
+        if e.author == self_author:
             d["me"] = side_payload
-        elif e.author == "par":
+        elif e.author == partner_author:
             d["par"] = side_payload
 
         d["created_at"] = d["created_at"] or (e.updated_at or "")
@@ -295,7 +335,13 @@ def home(request: Request, db: Session = Depends(get_db)):
 @app.post("/save_side")
 def save_side(
     request: Request,
-    author: str = Form(...),  # "me" ou "par"
+
+    # ✅ Compatível com seu index atual (author=me/par)
+    author: str = Form(""),
+
+    # ✅ Compatível com a versão melhor (side=self/partner)
+    side: str = Form(""),  # "self" ou "partner"
+
     mood: str = Form(""),
     moment_special: str = Form(""),
     love_action: str = Form(""),
@@ -311,13 +357,33 @@ def save_side(
     if not u.couple_id:
         return redirect_to("/pair")
 
-    if author not in ("me", "par"):
-        return redirect_to("/")
+    roles = get_roles(db, u.couple_id, u.id)
+    self_author = roles["self_author"]
+    partner_author = roles["partner_author"]
+
+    # ✅ Determina o "author" real do banco com base em quem está logado
+    # Prioridade: se vier side=self/partner, usamos ele (mais correto).
+    if side:
+        if side == "self":
+            author_db = self_author
+        elif side == "partner":
+            author_db = partner_author
+        else:
+            return redirect_to("/")
+    else:
+        # fallback: seu index atual manda author="me"/"par"
+        # Aqui "me/par" deve ser interpretado como "meu lado" / "lado do par"
+        if author == "me":
+            author_db = self_author
+        elif author == "par":
+            author_db = partner_author
+        else:
+            return redirect_to("/")
 
     if not day:
         day = date.today().isoformat()
 
-    # ✅ AGORA SEM HORA
+    # ✅ Sem hora
     now = datetime.now().strftime("%d/%m/%Y")
 
     existing = (
@@ -325,13 +391,13 @@ def save_side(
         .filter(
             Entry.couple_id == u.couple_id,
             Entry.day == day,
-            Entry.author == author,
+            Entry.author == author_db,
         )
         .first()
     )
 
     if not existing:
-        existing = Entry(couple_id=u.couple_id, day=day, author=author)
+        existing = Entry(couple_id=u.couple_id, day=day, author=author_db)
         db.add(existing)
 
     existing.mood = (mood or "").strip()
