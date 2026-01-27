@@ -6,26 +6,27 @@ from sqlalchemy import (
     ForeignKey,
     Text,
     UniqueConstraint,
+    Index,
 )
 from sqlalchemy.orm import relationship
 from .db import Base
 
-# =========================
-# Schema (compatível com SQLite e Postgres)
-# - SQLite NÃO suporta schema; Postgres suporta.
-# - Use DB_SCHEMA=duo no ambiente se quiser schema.
-# =========================
+# ======================================================
+# Schema dinâmico
+# - Postgres (Neon): usa schema (ex: duo)
+# - SQLite/local: ignora schema
+# ======================================================
 DB_SCHEMA = os.getenv("DB_SCHEMA", "").strip()
 
-def tn(name: str) -> str:
-    """table name fully qualified for ForeignKey"""
-    return f"{DB_SCHEMA}.{name}" if DB_SCHEMA else name
+def fk(table: str) -> str:
+    """Helper para ForeignKey com ou sem schema"""
+    return f"{DB_SCHEMA}.{table}.id" if DB_SCHEMA else f"{table}.id"
 
-def table_args(*args):
-    """helper: monta __table_args__ com/sem schema"""
+def table_args(*constraints):
+    """Monta __table_args__ corretamente"""
     if DB_SCHEMA:
-        return (*args, {"schema": DB_SCHEMA})
-    return args
+        return (*constraints, {"schema": DB_SCHEMA})
+    return constraints
 
 
 # =========================
@@ -38,11 +39,26 @@ class Couple(Base):
     id = Column(Integer, primary_key=True)
     code = Column(String(16), unique=True, index=True, nullable=False)
 
-    users = relationship("User", back_populates="couple", cascade="all, delete-orphan")
-    entries = relationship("Entry", back_populates="couple", cascade="all, delete-orphan")
-
-    special_dates = relationship("SpecialDate", back_populates="couple", cascade="all, delete-orphan")
-    notifications = relationship("Notification", back_populates="couple", cascade="all, delete-orphan")
+    users = relationship(
+        "User",
+        back_populates="couple",
+        cascade="all, delete-orphan",
+    )
+    entries = relationship(
+        "Entry",
+        back_populates="couple",
+        cascade="all, delete-orphan",
+    )
+    special_dates = relationship(
+        "SpecialDate",
+        back_populates="couple",
+        cascade="all, delete-orphan",
+    )
+    notifications = relationship(
+        "Notification",
+        back_populates="couple",
+        cascade="all, delete-orphan",
+    )
 
 
 # =========================
@@ -50,18 +66,21 @@ class Couple(Base):
 # =========================
 class User(Base):
     __tablename__ = "users"
-    __table_args__ = table_args()
+    __table_args__ = table_args(
+        Index("ix_users_email", "email", unique=True),
+        Index("ix_users_couple_id", "couple_id"),
+    )
 
     id = Column(Integer, primary_key=True)
 
     couple_id = Column(
         Integer,
-        ForeignKey(f"{tn('couples')}.id"),
+        ForeignKey(fk("couples"), ondelete="SET NULL"),
         nullable=True,
     )
 
     name = Column(String(80), nullable=False)
-    email = Column(String(160), unique=True, index=True, nullable=False)
+    email = Column(String(160), nullable=False)
     password_hash = Column(String(255), nullable=False)
 
     couple = relationship("Couple", back_populates="users")
@@ -74,19 +93,19 @@ class Entry(Base):
     __tablename__ = "entries"
     __table_args__ = table_args(
         UniqueConstraint("couple_id", "day", "author", name="uq_entry_side"),
+        Index("ix_entries_couple_day", "couple_id", "day"),
     )
 
     id = Column(Integer, primary_key=True)
 
     couple_id = Column(
         Integer,
-        ForeignKey(f"{tn('couples')}.id"),
+        ForeignKey(fk("couples"), ondelete="CASCADE"),
         nullable=False,
-        index=True,
     )
 
-    day = Column(String(10), index=True, nullable=False)   # YYYY-MM-DD
-    author = Column(String(8), nullable=False)             # "me" ou "par"
+    day = Column(String(10), nullable=False)      # YYYY-MM-DD
+    author = Column(String(8), nullable=False)    # "me" | "par"
 
     mood = Column(String(120), default="")
     moment_special = Column(Text, default="")
@@ -95,7 +114,7 @@ class Entry(Base):
     music = Column(String(200), default="")
     updated_at = Column(String(32), default="")
 
-    # ✅ NOVO: tags do diário (CSV simples)
+    # Tags do diário (CSV simples)
     tags_csv = Column(Text, default="")
 
     couple = relationship("Couple", back_populates="entries")
@@ -108,53 +127,51 @@ class SpecialDate(Base):
     __tablename__ = "special_dates"
     __table_args__ = table_args(
         UniqueConstraint("couple_id", "type", "date", name="uq_special_date"),
+        Index("ix_special_dates_couple_id", "couple_id"),
     )
 
     id = Column(Integer, primary_key=True)
 
     couple_id = Column(
         Integer,
-        ForeignKey(f"{tn('couples')}.id"),
+        ForeignKey(fk("couples"), ondelete="CASCADE"),
         nullable=False,
-        index=True,
     )
 
-    # chave padronizada: primeiro_encontro, primeiro_beijo, primeira_vez, casamento, outro
+    # ex: primeiro_encontro, primeiro_beijo, casamento
     type = Column(String(50), nullable=False)
 
-    # label humano para mostrar no app (ex.: "Primeiro beijo")
+    # ex: "Primeiro encontro"
     label = Column(String(80), nullable=False)
 
-    # data em YYYY-MM-DD
+    # YYYY-MM-DD
     date = Column(String(10), nullable=False)
 
-    # detalhe opcional
     note = Column(Text, default="")
 
     couple = relationship("Couple", back_populates="special_dates")
 
 
 # =========================
-# NOTIFICAÇÕES INTERNAS
+# NOTIFICAÇÕES
 # =========================
 class Notification(Base):
     __tablename__ = "notifications"
-    __table_args__ = table_args()
+    __table_args__ = table_args(
+        Index("ix_notifications_couple_id", "couple_id"),
+    )
 
     id = Column(Integer, primary_key=True)
 
     couple_id = Column(
         Integer,
-        ForeignKey(f"{tn('couples')}.id"),
+        ForeignKey(fk("couples"), ondelete="CASCADE"),
         nullable=False,
-        index=True,
     )
 
     created_at = Column(String(20), nullable=False)  # dd/mm/yyyy
     title = Column(String(120), nullable=False)
     body = Column(Text, default="")
-
-    # 0/1 (SQLite não tem boolean nativo tão “puro”)
-    is_read = Column(Integer, default=0)
+    is_read = Column(Integer, default=0)  # 0 = não lida, 1 = lida
 
     couple = relationship("Couple", back_populates="notifications")
