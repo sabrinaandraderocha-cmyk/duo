@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Duo{% endblock %}</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <h1><a href="/" class="brandlink">Duo 💙</a></h1>
+      <p class="subtitle">
+        {% if user %}
+          Diário do casal:
+          <strong>{{ user.name }}</strong>
+          {% if partner_name %}+ <strong>{{ partner_name }}</strong>{% endif %}
+        {% else %}
+          Diário do casal
+        {% endif %}
+      </p>
+    </div>
+
+    <nav class="nav">
+      {% if user %}
+        <a class="btn secondary" href="/">Timeline</a>
+        <a class="btn secondary" href="/puxa-papo">💬 Puxa-papo</a>
+        <a class="btn secondary" href="/special-dates">💖 Datas</a>
+        <a class="btn secondary" href="/notifications">🔔 Notificações</a>
+        <a class="btn secondary" href="/logout">Sair</a>
+      {% else %}
+        <a class="btn secondary" href="/login">Entrar</a>
+      {% endif %}
+    </nav>
+  </header>
+
+  <main class="wrap">
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>
