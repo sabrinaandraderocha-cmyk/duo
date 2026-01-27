@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Puxa-papo • Duo{% endblock %}
+
+{% block content %}
+  <div class="section-title">
+    <div>
+      <h2>Puxa-papo 💬</h2>
+      <p class="muted">
+        Um jogo rápido pra vocês se encontrarem no dia.
+        {% if partner_name %} Você + <strong>{{ partner_name }}</strong>. {% endif %}
+      </p>
+    </div>
+    <div class="section-actions">
+      <a class="btn secondary" href="/">Voltar</a>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Escolha o modo</h3>
+
+    <form method="post" action="/puxa-papo/next" style="display:flex; gap:10px; flex-wrap:wrap; margin-top:10px;">
+      <select name="mode" class="input" style="min-width:220px;">
+        {% for key,label in modes %}
+          <option value="{{ key }}" {% if last and last.mode==key %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+
+      <button class="btn primary" type="submit">Sortear pergunta</button>
+    </form>
+  </div>
+
+  <div class="card" style="margin-top:14px;">
+    <h3>Pergunta</h3>
+
+    {% if last %}
+      <p style="font-size:1.1rem; line-height:1.6; margin-top:10px;">
+        {{ last.question }}
+      </p>
+      <p class="muted small" style="margin-top:10px;">
+        Sorteada em {{ last.at }}
+      </p>
+
+      <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:12px;">
+        <button class="btn secondary" type="button" onclick="navigator.clipboard.writeText(`{{ last.question|replace('`','\\`') }}`)">
+          📋 Copiar
+        </button>
+        <form method="post" action="/puxa-papo/next" style="margin:0;">
+          <input type="hidden" name="mode" value="{{ last.mode }}">
+          <button class="btn primary" type="submit">Outra do mesmo modo</button>
+        </form>
+      </div>
+    {% else %}
+      <p class="muted" style="margin-top:10px;">
+        Clique em “Sortear pergunta” pra começar.
+      </p>
+    {% endif %}
+  </div>
+{% endblock %}
