@@ -26,6 +26,12 @@
         </span>
         <a class="btn secondary" href="/logout">Sair</a>
       </div>
+
+      <!-- 🔗 ATALHOS -->
+      <div class="quick-actions">
+        <a class="btn tiny secondary" href="/puxa-papo">💬 Puxa-papo</a>
+        <a class="btn tiny secondary" href="/datas-especiais">💖 Datas especiais</a>
+      </div>
     </div>
   </header>
 
@@ -43,34 +49,46 @@
 
       <div class="two-col">
         <!-- =========================
-             LADO: VOCÊ (usuário logado)
+             LADO: VOCÊ
              ========================= -->
         <form method="post" action="/save_side" class="side">
-          <!-- ✅ AGORA: self/partner (não quebra com troca de login) -->
           <input type="hidden" name="side" value="self">
 
           <h3>Parte de {{ user.name }}</h3>
 
           <label>Como eu estou hoje</label>
-          <input name="mood" placeholder="ex: em paz, sensível, leve, cansada">
+          <input name="mood" placeholder="ex: em paz, sensível, cansada">
 
           <label>Momento especial</label>
-          <textarea
-            name="moment_special"
-            placeholder="O que aconteceu hoje que foi significativo para você?"
-          ></textarea>
+          <textarea name="moment_special"
+            placeholder="O que aconteceu hoje que foi significativo para você?"></textarea>
 
           <label>Atitude do meu par que me fez sentir amor</label>
-          <textarea
-            name="love_action"
-            placeholder="Um gesto, uma escuta, um cuidado, uma presença…"
-          ></textarea>
+          <textarea name="love_action"
+            placeholder="Um gesto, uma escuta, um cuidado…"></textarea>
 
           <label>Hoje estou parecido com (personagem)</label>
           <input name="character" placeholder="ex: Amélie, Ted Lasso">
 
           <label>Música do dia</label>
           <input name="music" placeholder="ex: Artista — Música">
+
+          <!-- 🏷️ TAGS -->
+          <label>Climinha do dia (opcional)</label>
+          <div class="tags">
+            {% for tag in [
+              "Hoje tem 😏",
+              "Quero filme 🎬",
+              "Quero massagem 💆",
+              "Tô estressada 😤",
+              "Saudades, quero beijo 💋"
+            ] %}
+              <label class="tag">
+                <input type="checkbox" name="tags_csv" value="{{ tag }}">
+                <span>{{ tag }}</span>
+              </label>
+            {% endfor %}
+          </div>
 
           <button class="btn primary" type="submit">
             Salvar meu registro
@@ -86,25 +104,19 @@
           <h3>Parte de {{ partner_name or "Seu par" }}</h3>
 
           <label>Como eu estou hoje</label>
-          <input name="mood" placeholder="ex: tranquilo(a), feliz, reflexivo(a)">
+          <input name="mood">
 
           <label>Momento especial</label>
-          <textarea
-            name="moment_special"
-            placeholder="O que marcou o dia para você?"
-          ></textarea>
+          <textarea name="moment_special"></textarea>
 
           <label>Atitude do meu par que me fez sentir amor</label>
-          <textarea
-            name="love_action"
-            placeholder="O que o outro fez hoje que te tocou?"
-          ></textarea>
+          <textarea name="love_action"></textarea>
 
           <label>Hoje estou parecido com (personagem)</label>
-          <input name="character" placeholder="ex: Fleabag, Ted Lasso">
+          <input name="character">
 
           <label>Música do dia</label>
-          <input name="music" placeholder="ex: Artista — Música">
+          <input name="music">
 
           <button class="btn secondary" type="submit">
             Salvar registro do par
@@ -128,89 +140,20 @@
       {% for e in entries %}
         <article class="entry">
           <div class="entry-head">
-            <div class="date">
-              <strong>Dia:</strong> {{ e.day }}
-              {% if e.created_at %}
-                <span class="muted">• criado em {{ e.created_at[:10] }}</span>
-              {% endif %}
-            </div>
+            <strong>{{ e.day }}</strong>
           </div>
 
           <div class="two-col read">
-            <!-- =========================
-                 VISUALIZA: VOCÊ
-                 ========================= -->
             <div class="side readside">
-              <h3 class="who">{{ user.name }}</h3>
-
-              {% if e.me.updated_at %}
-                <div class="tiny muted">atualizado em {{ e.me.updated_at[:10] }}</div>
-              {% endif %}
-
-              {% if e.me.mood %}
-                <div class="mood">Como estou: <strong>{{ e.me.mood }}</strong></div>
-              {% endif %}
-
-              {% if e.me.moment_special %}
-                <div class="block">
-                  <div class="block-title">✨ Momento especial</div>
-                  <p class="note">{{ e.me.moment_special }}</p>
-                </div>
-              {% endif %}
-
-              {% if e.me.love_action %}
-                <div class="block">
-                  <div class="block-title">💙 Me senti amada(o) quando…</div>
-                  <p class="note">{{ e.me.love_action }}</p>
-                </div>
-              {% endif %}
-
-              <div class="meta">
-                {% if e.me.character %}<div>🎬 <strong>Personagem:</strong> {{ e.me.character }}</div>{% endif %}
-                {% if e.me.music %}<div>🎵 <strong>Música:</strong> {{ e.me.music }}</div>{% endif %}
-              </div>
-
-              {% if not (e.me.mood or e.me.moment_special or e.me.love_action or e.me.character or e.me.music) %}
-                <p class="empty muted">Ainda não escreveu neste dia.</p>
-              {% endif %}
+              <h3>{{ user.name }}</h3>
+              {% if e.me.mood %}<p><strong>Como estou:</strong> {{ e.me.mood }}</p>{% endif %}
+              {% if e.me.moment_special %}<p>{{ e.me.moment_special }}</p>{% endif %}
             </div>
 
-            <!-- =========================
-                 VISUALIZA: PAR
-                 ========================= -->
             <div class="side readside">
-              <h3 class="who">{{ partner_name or "Seu par" }}</h3>
-
-              {% if e.par.updated_at %}
-                <div class="tiny muted">atualizado em {{ e.par.updated_at[:10] }}</div>
-              {% endif %}
-
-              {% if e.par.mood %}
-                <div class="mood">Como estou: <strong>{{ e.par.mood }}</strong></div>
-              {% endif %}
-
-              {% if e.par.moment_special %}
-                <div class="block">
-                  <div class="block-title">✨ Momento especial</div>
-                  <p class="note">{{ e.par.moment_special }}</p>
-                </div>
-              {% endif %}
-
-              {% if e.par.love_action %}
-                <div class="block">
-                  <div class="block-title">💙 Me senti amada(o) quando…</div>
-                  <p class="note">{{ e.par.love_action }}</p>
-                </div>
-              {% endif %}
-
-              <div class="meta">
-                {% if e.par.character %}<div>🎬 <strong>Personagem:</strong> {{ e.par.character }}</div>{% endif %}
-                {% if e.par.music %}<div>🎵 <strong>Música:</strong> {{ e.par.music }}</div>{% endif %}
-              </div>
-
-              {% if not (e.par.mood or e.par.moment_special or e.par.love_action or e.par.character or e.par.music) %}
-                <p class="empty muted">Ainda não escreveu neste dia.</p>
-              {% endif %}
+              <h3>{{ partner_name or "Seu par" }}</h3>
+              {% if e.par.mood %}<p><strong>Como estou:</strong> {{ e.par.mood }}</p>{% endif %}
+              {% if e.par.moment_special %}<p>{{ e.par.moment_special }}</p>{% endif %}
             </div>
           </div>
         </article>
