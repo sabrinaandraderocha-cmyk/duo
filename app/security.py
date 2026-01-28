@@ -1,8 +1,8 @@
 from passlib.context import CryptContext
 from passlib.exc import UnknownHashError
 
-# MUDANÇA: Forçamos o uso do bcrypt sem deixar 'auto' decidir
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# MUDANÇA: Usando pbkdf2_sha256 que não precisa de instalação externa
+pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
 
 def verify_password(plain_password, hashed_password):
     """Verifica se a senha digitada bate com o hash salvo."""
