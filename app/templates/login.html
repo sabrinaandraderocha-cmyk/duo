@@ -4,22 +4,17 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Duo • Entrar</title>
-  
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body class="auth-body">
-
   <main class="auth-wrap">
     <section class="auth-card">
-
       <div class="auth-head">
         <h1 class="auth-logo">Duo 💙</h1>
-        <p class="auth-subtitle">
-          Um diário de momentos a dois:<br>com carinho, música e memória.
-        </p>
+        <p class="auth-subtitle">Um diário de momentos a dois:<br>com carinho, música e memória.</p>
       </div>
 
       {% if error %}
@@ -28,54 +23,26 @@
         </div>
       {% endif %}
 
-      {% if success %}
-        <div class="auth-alert" style="background:#f0fdf4; border: 2px solid #86efac; color:#15803d; border-radius:12px; padding:10px; margin-bottom:20px; font-weight:700; box-shadow: 4px 4px 0px #86efac;">
-          ✅ {{ success }}
-        </div>
-      {% endif %}
-
       <form method="post" action="/login" class="auth-form">
-
         <div class="auth-field">
           <label for="email">E-mail</label>
-          <input
-            id="email"
-            name="email"
-            type="email"
-            placeholder="seuemail@exemplo.com"
-            required
-            autofocus
-            autocomplete="email"
-          >
+          <input id="email" name="email" type="email" placeholder="seuemail@exemplo.com" required autofocus autocomplete="email">
         </div>
-
         <div class="auth-field">
-          <div class="field-head" style="display:flex; justify-content:space-between; align-items:center;">
-            <label for="password" style="margin:0;">Senha</label>
-            <a href="/forgot" style="font-size:12px; color:var(--primary); font-weight:700; text-decoration: underline;">Esqueci a senha</a>
+          <div class="field-head">
+            <label for="password">Senha</label>
           </div>
-          <input
-            id="password"
-            name="password"
-            type="password"
-            placeholder="Sua senha secreta"
-            required
-            autocomplete="current-password"
-          >
+          <input id="password" name="password" type="password" placeholder="Sua senha secreta" required autocomplete="current-password">
         </div>
 
-        <button class="btn primary auth-btn" type="submit">
-          Entrar no Diário
-        </button>
+        <button class="btn primary auth-btn" type="submit">Entrar no Diário</button>
       </form>
 
       <div class="auth-footer">
         <span class="muted">Ainda não tem conta?</span>
         <a class="link-highlight" href="/signup">Criar acesso</a>
       </div>
-
     </section>
   </main>
-
 </body>
 </html>
