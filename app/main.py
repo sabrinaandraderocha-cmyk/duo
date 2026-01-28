@@ -15,71 +15,79 @@ from .models import User, Couple, Entry
 from .security import hash_password, verify_password
 
 # =====================================================
-# Paths
+# CONFIGURAÇÕES INICIAIS
 # =====================================================
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 STATIC_DIR = os.path.join(BASE_DIR, "static")
 TEMPLATES_DIR = os.path.join(BASE_DIR, "templates")
 
+# Cria tabelas se não existirem
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Duo")
 
+# Configuração de Sessão (Cookie)
 app.add_middleware(
     SessionMiddleware,
-    secret_key=os.getenv("SECRET_KEY", "duo-change-me"),
+    secret_key=os.getenv("SECRET_KEY", "duo-secret-key-change-me"),
     same_site="lax",
-    https_only=False,
-    max_age=60 * 60 * 24 * 7,
+    https_only=False, # Mude para True em produção com HTTPS
+    max_age=60 * 60 * 24 * 7, # 7 dias
 )
 
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
 
 # =====================================================
-# Configs
+# DADOS ESTÁTICOS & HELPERS
 # =====================================================
+
+# Tags disponíveis para o humor do dia
 DIARY_TAGS = {
     "hoje_tem": "😏 Hoje tem",
-    "quero_filme": "🎬 Hoje quero um filme",
-    "quero_massagem": "💆 Hoje quero massagem",
-    "estressada": "😤 Hoje estou estressada",
-    "saudades": "💋 Saudades, quero beijo",
+    "quero_filme": "🎬 Quero filme",
+    "quero_massagem": "💆 Quero massagem",
+    "estressada": "😤 Tô estressada(o)",
+    "saudades": "💋 Quero beijo",
+    "fofoca": "👀 Tenho fofoca",
 }
 
+# Perguntas do Puxa-Papo
 QUESTION_SETS = {
     "divertidas": [
         "Se a gente fosse um filme, qual seria o gênero?",
-        "Qual seria nosso nome de dupla?",
-        "Qual mania minha você acha fofa?",
-        "Que música tocaria se a gente entrasse numa festa?",
-        "Se a gente pudesse viajar agora, pra onde iríamos?",
+        "Qual seria nosso nome de dupla criminosa?",
+        "Qual mania minha você acha estranhamente fofa?",
+        "Que música tocaria se a gente entrasse numa festa em câmera lenta?",
+        "Se a gente ganhasse na loteria hoje, qual a primeira coisa que faríamos?",
     ],
     "romanticas": [
-        "O que você mais admira em mim?",
-        "Quando você percebeu que era amor?",
-        "Como posso te amar melhor?",
-        "Qual gesto meu te faz se sentir seguro(a)?",
+        "O que você mais admira em mim hoje?",
+        "Qual foi o momento exato que você percebeu que me amava?",
+        "Como posso fazer seu dia 1% melhor amanhã?",
+        "Qual gesto meu te faz sentir mais segurança?",
     ],
     "picantes_leves": [
-        "Hoje eu te daria um beijo que é…",
-        "De 0 a ‘vem cá’, quanto você tá com saudade?",
-        "Qual meu ponto fraco?",
-        "Beijo, abraço ou cafuné?",
+        "Hoje eu te daria um beijo com sabor de...",
+        "De 0 a 10, quão perigoso está seu pensamento agora?",
+        "Qual parte do meu corpo chamou sua atenção hoje?",
+        "Se tivéssemos 1 hora sozinhos agora, o que faríamos?",
     ],
 }
 
-# =====================================================
-# Helpers
-# =====================================================
 def redirect_to(url: str):
     return RedirectResponse(url, status_code=303)
 
 def current_user(request: Request, db: Session):
     uid = request.session.get("uid")
-    return db.get(User, uid) if uid else None
+    if not uid:
+        return None
+    return db.get(User, uid)
 
-def get_roles(db: Session, couple_id: int, my_user_id: int):
+def get_couple_roles(db: Session, couple_id: int, my_user_id: int):
+    """
+    Define quem é 'me' (eu) e quem é 'par' (outro) baseado na ordem de cadastro.
+    """
     users = (
         db.query(User)
         .filter(User.couple_id == couple_id)
@@ -87,31 +95,35 @@ def get_roles(db: Session, couple_id: int, my_user_id: int):
         .all()
     )
 
+    # Se só tiver 1 usuário (parceiro não entrou ainda)
     if len(users) < 2:
-        return {"self_author": "me", "partner_author": "par", "partner_name": None}
+        return {"self_role": "me", "partner_role": "par", "partner_name": "Aguardando..."}
 
     first, second = users[0], users[1]
 
     if my_user_id == first.id:
-        return {"self_author": "me", "partner_author": "par", "partner_name": second.name}
-    return {"self_author": "par", "partner_author": "me", "partner_name": first.name}
+        return {"self_role": "me", "partner_role": "par", "partner_name": second.name}
+    
+    # Se eu sou o segundo usuário
+    return {"self_role": "par", "partner_role": "me", "partner_name": first.name}
 
 def split_tags(csv: str):
-    return [t for t in (csv or "").split(",") if t.strip()]
+    if not csv: 
+        return []
+    return [t for t in csv.split(",") if t.strip()]
 
 def join_tags(tags: list[str]):
     seen = []
     for t in (tags or []):
         t = (t or "").strip()
-        if not t:
-            continue
-        if t not in seen:
+        if t and t not in seen:
             seen.append(t)
     return ",".join(seen)
 
 # =====================================================
-# Auth
+# ROTAS DE AUTENTICAÇÃO (LOGIN/SIGNUP)
 # =====================================================
+
 @app.get("/login", response_class=HTMLResponse)
 def login_page(request: Request):
     return templates.TemplateResponse("login.html", {"request": request})
@@ -129,7 +141,7 @@ def login(
     if not user or not verify_password(password, user.password_hash):
         return templates.TemplateResponse(
             "login.html",
-            {"request": request, "error": "E-mail ou senha inválidos."},
+            {"request": request, "error": "E-mail ou senha incorretos."},
             status_code=400,
         )
 
@@ -154,7 +166,7 @@ def signup(
     if db.query(User).filter(User.email == email_norm).first():
         return templates.TemplateResponse(
             "signup.html",
-            {"request": request, "error": "E-mail já cadastrado."},
+            {"request": request, "error": "Este e-mail já tem conta."},
             status_code=400,
         )
 
@@ -176,18 +188,20 @@ def logout(request: Request):
     return redirect_to("/login")
 
 # =====================================================
-# Pair
+# ROTA DE PAREAMENTO (CONECTAR CASAL)
 # =====================================================
+
 @app.get("/pair", response_class=HTMLResponse)
 def pair_page(request: Request, db: Session = Depends(get_db)):
     u = current_user(request, db)
-    if not u:
-        return redirect_to("/login")
+    if not u: return redirect_to("/login")
 
     couple = db.get(Couple, u.couple_id) if u.couple_id else None
+    
     partner_name = None
     if u.couple_id:
-        partner_name = get_roles(db, u.couple_id, u.id)["partner_name"]
+        roles = get_couple_roles(db, u.couple_id, u.id)
+        partner_name = roles["partner_name"]
 
     return templates.TemplateResponse(
         "pair.html",
@@ -197,21 +211,20 @@ def pair_page(request: Request, db: Session = Depends(get_db)):
 @app.post("/pair/create")
 def pair_create(request: Request, db: Session = Depends(get_db)):
     u = current_user(request, db)
-    if not u:
-        return redirect_to("/login")
-    if u.couple_id:
-        return redirect_to("/")
+    if not u: return redirect_to("/login")
+    if u.couple_id: return redirect_to("/") # Já tem par
 
-    # tenta gerar um código único
+    # Tenta gerar código único curto (4 chars)
     code = None
     for _ in range(10):
-        candidate = secrets.token_hex(4)
+        candidate = secrets.token_hex(4) # ex: a1b2c3d4
         exists = db.query(Couple).filter(Couple.code == candidate).first()
         if not exists:
             code = candidate
             break
-    if not code:
-        code = secrets.token_hex(6)
+    
+    # Fallback se falhar
+    if not code: code = secrets.token_hex(6)
 
     couple = Couple(code=code)
     db.add(couple)
@@ -230,16 +243,16 @@ def pair_join(
     db: Session = Depends(get_db),
 ):
     u = current_user(request, db)
-    if not u:
-        return redirect_to("/login")
-    if u.couple_id:
-        return redirect_to("/")
+    if not u: return redirect_to("/login")
+    if u.couple_id: return redirect_to("/")
 
-    couple = db.query(Couple).filter(Couple.code == (code or "").strip()).first()
+    code_clean = (code or "").strip()
+    couple = db.query(Couple).filter(Couple.code == code_clean).first()
+    
     if not couple:
         return templates.TemplateResponse(
             "pair.html",
-            {"request": request, "user": u, "couple": None, "error": "Código inválido."},
+            {"request": request, "user": u, "couple": None, "error": "Código não encontrado."},
             status_code=400,
         )
 
@@ -248,18 +261,20 @@ def pair_join(
     return redirect_to("/")
 
 # =====================================================
-# Home
+# DASHBOARD PRINCIPAL (HOME)
 # =====================================================
+
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request, db: Session = Depends(get_db)):
     u = current_user(request, db)
-    if not u:
-        return redirect_to("/login")
-    if not u.couple_id:
-        return redirect_to("/pair")
+    if not u: return redirect_to("/login")
+    
+    # Se não tiver par, manda configurar
+    if not u.couple_id: return redirect_to("/pair")
 
-    roles = get_roles(db, u.couple_id, u.id)
+    roles = get_couple_roles(db, u.couple_id, u.id)
 
+    # Busca todas as entradas do casal
     entries = (
         db.query(Entry)
         .filter(Entry.couple_id == u.couple_id)
@@ -267,37 +282,58 @@ def home(request: Request, db: Session = Depends(get_db)):
         .all()
     )
 
+    # Agrupamento por dia
     by_day = {}
+    
+    # Estrutura padrão para um dia vazio
+    def empty_entry():
+        return {
+            "mood": "", 
+            "moment_special": "", 
+            "love_action": "", 
+            "character": "", 
+            "music": "", 
+            "tags": [],
+            "filled": False # Flag para ajudar no CSS
+        }
+
     for e in entries:
-        d = by_day.setdefault(e.day, {"day": e.day, "me": None, "par": None, "created_at": ""})
-        payload = {
+        # Garante que a chave existe
+        if e.day not in by_day:
+            by_day[e.day] = {
+                "day": e.day, 
+                "display_date": datetime.strptime(e.day, "%Y-%m-%d").strftime("%d/%m") if "-" in e.day else e.day,
+                "me": empty_entry(), 
+                "par": empty_entry()
+            }
+        
+        # Prepara os dados dessa entrada específica
+        data = {
             "mood": e.mood or "",
             "moment_special": e.moment_special or "",
             "love_action": e.love_action or "",
             "character": e.character or "",
             "music": e.music or "",
-            "updated_at": e.updated_at or "",
-            "tags": split_tags(getattr(e, "tags_csv", "") or ""),
+            "tags": split_tags(getattr(e, "tags_csv", "")),
+            "filled": True
         }
 
-        if e.author == roles["self_author"]:
-            d["me"] = payload
-        elif e.author == roles["partner_author"]:
-            d["par"] = payload
+        # Aloca para "mim" ou para o "par"
+        if e.author == roles["self_role"]:
+            by_day[e.day]["me"] = data
+        elif e.author == roles["partner_role"]:
+            by_day[e.day]["par"] = data
 
-        d["created_at"] = d["created_at"] or (e.updated_at or "")
+    # Converte dicionário em lista ordenada (mais recente primeiro)
+    timeline = []
+    sorted_days = sorted(by_day.keys(), reverse=True)
+    
+    for day in sorted_days:
+        timeline.append(by_day[day])
 
-    days_sorted = sorted(by_day.keys(), reverse=True)
-    rows = []
-    for k in days_sorted:
-        d = by_day[k]
-        d["me"] = d["me"] or {
-            "mood": "", "moment_special": "", "love_action": "", "character": "", "music": "", "updated_at": "", "tags": []
-        }
-        d["par"] = d["par"] or {
-            "mood": "", "moment_special": "", "love_action": "", "character": "", "music": "", "updated_at": "", "tags": []
-        }
-        rows.append(d)
+    # Se a lista estiver vazia ou hoje não tiver registro, podemos criar um "placeholder" visual no template
+    today_iso = date.today().isoformat()
+    has_today = any(d['day'] == today_iso for d in timeline)
 
     return templates.TemplateResponse(
         "index.html",
@@ -305,57 +341,62 @@ def home(request: Request, db: Session = Depends(get_db)):
             "request": request,
             "user": u,
             "partner_name": roles["partner_name"],
-            "entries": rows,
+            "timeline": timeline,
             "diary_tags": DIARY_TAGS,
+            "today_iso": today_iso,
+            "has_today": has_today
         },
     )
 
 # =====================================================
-# Save side
+# SALVAR REGISTRO
 # =====================================================
+
 @app.post("/save_side")
 def save_side(
     request: Request,
-    side: str = Form(...),  # self ou partner
+    side: str = Form(...),  # 'self' ou 'partner'
     mood: str = Form(""),
     moment_special: str = Form(""),
     love_action: str = Form(""),
     character: str = Form(""),
     music: str = Form(""),
     tags: list[str] = Form(default=[]),
-    day: str = Form(""),  # opcional: permitir salvar outro dia
+    day: str = Form(""), 
     db: Session = Depends(get_db),
 ):
     u = current_user(request, db)
-    if not u:
-        return redirect_to("/login")
-    if not u.couple_id:
-        return redirect_to("/pair")
+    if not u or not u.couple_id: return redirect_to("/")
 
-    roles = get_roles(db, u.couple_id, u.id)
-    author = roles["self_author"] if side == "self" else roles["partner_author"]
+    roles = get_couple_roles(db, u.couple_id, u.id)
+    
+    # Define quem é o autor no banco (usa role 'me' ou 'par')
+    author_role = roles["self_role"] if side == "self" else roles["partner_role"]
 
+    # Se não vier dia, assume hoje
     if not day:
         day = date.today().isoformat()
 
+    # Tenta achar registro existente para editar
     entry = (
         db.query(Entry)
-        .filter(Entry.couple_id == u.couple_id, Entry.day == day, Entry.author == author)
+        .filter(Entry.couple_id == u.couple_id, Entry.day == day, Entry.author == author_role)
         .first()
     )
 
     if not entry:
-        entry = Entry(couple_id=u.couple_id, day=day, author=author)
+        entry = Entry(couple_id=u.couple_id, day=day, author=author_role)
         db.add(entry)
 
+    # Atualiza campos
     entry.mood = (mood or "").strip()
     entry.moment_special = (moment_special or "").strip()
     entry.love_action = (love_action or "").strip()
     entry.character = (character or "").strip()
     entry.music = (music or "").strip()
-    entry.updated_at = datetime.now().strftime("%d/%m/%Y")
+    entry.updated_at = datetime.now().strftime("%d/%m/%Y %H:%M")
 
-    # só salva tags válidas
+    # Filtra tags para garantir segurança
     clean_tags = [t for t in (tags or []) if t in DIARY_TAGS]
     if hasattr(entry, "tags_csv"):
         entry.tags_csv = join_tags(clean_tags)
@@ -364,17 +405,15 @@ def save_side(
     return redirect_to("/")
 
 # =====================================================
-# Puxa-papo
+# PUXA-PAPO (JOGUINHO)
 # =====================================================
+
 @app.get("/puxa-papo", response_class=HTMLResponse)
 def puxa_papo_page(request: Request, db: Session = Depends(get_db)):
     u = current_user(request, db)
-    if not u:
-        return redirect_to("/login")
-    if not u.couple_id:
-        return redirect_to("/pair")
+    if not u or not u.couple_id: return redirect_to("/")
 
-    roles = get_roles(db, u.couple_id, u.id)
+    roles = get_couple_roles(db, u.couple_id, u.id)
 
     return templates.TemplateResponse(
         "puxa_papo.html",
@@ -385,7 +424,7 @@ def puxa_papo_page(request: Request, db: Session = Depends(get_db)):
             "modes": [
                 ("divertidas", "😄 Divertidas"),
                 ("romanticas", "💖 Românticas"),
-                ("picantes_leves", "😏 Picantes (leve)"),
+                ("picantes_leves", "🔥 Picantes (leve)"),
             ],
             "last": request.session.get("puxa_papo_last"),
         },
@@ -396,10 +435,10 @@ def puxa_papo_next(request: Request, mode: str = Form("divertidas")):
     if mode not in QUESTION_SETS:
         mode = "divertidas"
 
-    q = random.choice(QUESTION_SETS[mode])
+    question = random.choice(QUESTION_SETS[mode])
+    
     request.session["puxa_papo_last"] = {
         "mode": mode,
-        "question": q,
-        "at": datetime.now().strftime("%d/%m/%Y"),
+        "question": question,
     }
     return redirect_to("/puxa-papo")
