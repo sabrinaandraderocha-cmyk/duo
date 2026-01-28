@@ -3,51 +3,137 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Duo • Casal</title>
+  <title>Duo • Conectar</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
   <link rel="stylesheet" href="/static/css/style.css">
+  
+  <style>
+    .code-box {
+      background: #f8fafc;
+      border: 2px dashed #cbd5e1;
+      padding: 16px;
+      border-radius: 12px;
+      font-family: monospace;
+      font-size: 24px;
+      letter-spacing: 4px;
+      color: var(--text);
+      font-weight: 700;
+      margin: 16px 0;
+      user-select: all; /* Facilita copiar */
+    }
+    .divider {
+      display: flex;
+      align-items: center;
+      text-align: center;
+      color: var(--muted);
+      font-size: 13px;
+      margin: 24px 0;
+    }
+    .divider::before, .divider::after {
+      content: '';
+      flex: 1;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .divider::before { margin-right: 10px; }
+    .divider::after { margin-left: 10px; }
+  </style>
 </head>
-<body>
-  <main class="wrap">
-    <section class="card">
-      <h1 style="margin:0 0 6px 0;">Vincular casal</h1>
-      <p class="muted">Olá, <strong>{{ user.name }}</strong>.</p>
+<body class="auth-body">
+
+  <main class="auth-wrap">
+    <section class="auth-card">
+
+      <div class="auth-head">
+        <h1 class="auth-logo">Sincronizar 🔗</h1>
+        <p class="auth-subtitle">
+          Olá, <strong>{{ user.name }}</strong>!<br>
+          Vamos conectar você ao seu amor para começar o diário.
+        </p>
+      </div>
 
       {% if error %}
-        <p class="empty" style="color:#991b1b; margin-top:10px;">{{ error }}</p>
+        <div class="auth-alert">
+          ⚠️ {{ error }}
+        </div>
       {% endif %}
 
       {% if couple %}
-        <p style="margin-top:12px;">
-          <strong>Código do casal:</strong> <span class="badge">{{ couple.code }}</span>
-        </p>
-        <p class="muted">Envie esse código para seu par entrar no Duo.</p>
+        
+        <div style="margin-bottom: 24px;">
+          <p class="muted" style="margin-bottom: 8px; font-size: 14px;">Este é o código do casal:</p>
+          <div class="code-box">{{ couple.code }}</div>
+          <p class="muted" style="font-size: 13px;">Envie para seu par digitar no celular dele(a).</p>
+        </div>
 
         {% if partner_name %}
-          <p style="margin-top:10px;">✅ Seu par: <strong>{{ partner_name }}</strong></p>
+          <div style="background: #ecfdf5; border: 1px solid #d1fae5; padding: 16px; border-radius: 12px; margin-bottom: 20px;">
+            <p style="color: #065f46; margin: 0; font-weight: 600;">
+              ✅ Par conectado: {{ partner_name }}
+            </p>
+          </div>
+          
+          <a class="btn primary auth-btn" href="/">
+            Entrar no Diário
+          </a>
+
         {% else %}
-          <p class="muted" style="margin-top:10px;">Aguardando seu par entrar com o código…</p>
+          <div style="background: #fff7ed; border: 1px solid #ffedd5; padding: 16px; border-radius: 12px; margin-bottom: 20px;">
+            <div style="font-size: 24px; margin-bottom: 4px;">⏳</div>
+            <p style="color: #9a3412; margin: 0; font-size: 14px; font-weight: 500;">
+              Aguardando seu par entrar...
+            </p>
+            <p style="font-size: 12px; color: #9a3412; opacity: 0.8;">Atualize a página quando ele(a) entrar.</p>
+          </div>
+          
+          <a class="btn secondary auth-btn" href="/pair">
+            🔄 Atualizar status
+          </a>
         {% endif %}
 
-        <a class="btn primary" href="/" style="display:inline-block; text-align:center;">Ir para o Duo</a>
       {% else %}
+        
         <form method="post" action="/pair/create">
-          <button class="btn primary" type="submit">Criar nosso casal</button>
+          <button class="btn primary auth-btn" type="submit">
+            ✨ Criar novo casal
+          </button>
+          <p class="muted" style="font-size: 12px; margin-top: 8px;">
+            Escolha isso se você for o primeiro a entrar.
+          </p>
         </form>
 
-        <hr style="margin:16px 0; border:0; border-top:1px solid #d8dee9;">
+        <div class="divider">OU</div>
 
-        <form method="post" action="/pair/join">
-          <label>Entrar com código</label>
-          <input name="code" placeholder="ex: a1b2c3d4" required>
+        <form method="post" action="/pair/join" class="auth-form">
+          <div class="auth-field">
+            <label for="code">Tenho um código</label>
+            <input 
+              name="code" 
+              id="code"
+              placeholder="Ex: a1b2c3" 
+              required 
+              style="text-align: center; letter-spacing: 2px; text-transform: lowercase;"
+            >
+          </div>
 
-          <button class="btn secondary" type="submit">Entrar no casal</button>
+          <button class="btn secondary auth-btn" type="submit">
+            Vincular conta
+          </button>
         </form>
+
       {% endif %}
 
-      <p class="muted" style="margin-top:12px;">
-        <a href="/logout"><strong>Sair</strong></a>
-      </p>
+      <div class="auth-footer">
+        <a href="/logout" style="color: var(--muted); border-bottom: 1px dotted var(--muted);">
+          Não é você? Sair
+        </a>
+      </div>
+
     </section>
   </main>
+
 </body>
 </html>
