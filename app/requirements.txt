@@ -1,8 +1,8 @@
 fastapi
 uvicorn
 sqlalchemy
-python-multipart
-itsdangerous
-passlib
 jinja2
+python-multipart
+passlib
+bcrypt
 psycopg2-binary
