@@ -356,3 +356,123 @@ def puxa_papo_next(request: Request, mode: str = Form("divertidas")):
         "at": datetime.now().strftime("%d/%m/%Y"),
     }
     return redirect_to("/puxa-papo")
+    # =====================================================
+# Datas especiais
+# =====================================================
+@app.get("/special-dates", response_class=HTMLResponse)
+def special_dates_page(request: Request, db: Session = Depends(get_db)):
+    u = current_user(request, db)
+    if not u or not u.couple_id:
+        return redirect_to("/login")
+
+    roles = get_roles(db, u.couple_id, u.id)
+
+    dates = (
+        db.query(SpecialDate)
+        .filter(SpecialDate.couple_id == u.couple_id)
+        .order_by(SpecialDate.date.asc())
+        .all()
+    )
+
+    return templates.TemplateResponse(
+        "special_dates.html",
+        {
+            "request": request,
+            "user": u,
+            "partner_name": roles["partner_name"],
+            "types": SPECIAL_DATE_TYPES,
+            "dates": dates,
+        },
+    )
+
+
+@app.post("/special-dates/add")
+def special_dates_add(
+    request: Request,
+    type: str = Form(...),
+    date_str: str = Form(..., alias="date"),
+    note: str = Form(""),
+    db: Session = Depends(get_db),
+):
+    u = current_user(request, db)
+    if not u or not u.couple_id:
+        return redirect_to("/login")
+
+    t = next((x for x in SPECIAL_DATE_TYPES if x["key"] == type), None)
+    if not t:
+        return redirect_to("/special-dates")
+
+    db.add(
+        SpecialDate(
+            couple_id=u.couple_id,
+            type=t["key"],
+            label=t["label"],
+            date=date_str,
+            note=note.strip(),
+        )
+    )
+    db.commit()
+
+    return redirect_to("/special-dates")
+
+
+@app.post("/special-dates/delete")
+def special_dates_delete(
+    request: Request,
+    id: int = Form(...),
+    db: Session = Depends(get_db),
+):
+    u = current_user(request, db)
+    item = db.get(SpecialDate, id)
+
+    if item and item.couple_id == u.couple_id:
+        db.delete(item)
+        db.commit()
+
+    return redirect_to("/special-dates")
+
+
+# =====================================================
+# Notificações
+# =====================================================
+@app.get("/notifications", response_class=HTMLResponse)
+def notifications_page(request: Request, db: Session = Depends(get_db)):
+    u = current_user(request, db)
+    if not u or not u.couple_id:
+        return redirect_to("/login")
+
+    roles = get_roles(db, u.couple_id, u.id)
+
+    items = (
+        db.query(Notification)
+        .filter(Notification.couple_id == u.couple_id)
+        .order_by(Notification.id.desc())
+        .all()
+    )
+
+    return templates.TemplateResponse(
+        "notifications.html",
+        {
+            "request": request,
+            "user": u,
+            "partner_name": roles["partner_name"],
+            "items": items,
+        },
+    )
+
+
+@app.post("/notifications/read")
+def notifications_read(
+    request: Request,
+    id: int = Form(...),
+    db: Session = Depends(get_db),
+):
+    u = current_user(request, db)
+    n = db.get(Notification, id)
+
+    if n and n.couple_id == u.couple_id:
+        n.is_read = 1
+        db.commit()
+
+    return redirect_to("/notifications")
+
