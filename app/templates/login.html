@@ -4,7 +4,6 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Duo • Entrar</title>
-
   <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body class="auth-body">
@@ -12,23 +11,19 @@
   <main class="auth-wrap">
     <section class="auth-card">
 
-      <!-- Cabeçalho -->
       <div class="auth-head">
-        <div class="auth-logo">Duo💙</div>
-
+        <h1 class="auth-logo">Duo 💙</h1>
         <p class="auth-subtitle">
-          Um diário de momentos a dois: com carinho, música e memória.
+          Um diário de momentos a dois:<br>com carinho, música e memória.
         </p>
       </div>
 
-      <!-- Erro -->
       {% if error %}
         <div class="auth-alert">
-          {{ error }}
+          ⚠️ {{ error }}
         </div>
       {% endif %}
 
-      <!-- Formulário -->
       <form method="post" action="/login" class="auth-form">
 
         <div class="auth-field">
@@ -40,29 +35,32 @@
             placeholder="seuemail@exemplo.com"
             required
             autofocus
+            autocomplete="email"
           >
         </div>
 
         <div class="auth-field">
-          <label for="password">Senha</label>
+          <div class="field-head">
+            <label for="password">Senha</label>
+          </div>
           <input
             id="password"
             name="password"
             type="password"
-            placeholder="••••••••"
+            placeholder="Sua senha secreta"
             required
+            autocomplete="current-password"
           >
         </div>
 
         <button class="btn primary auth-btn" type="submit">
-          Entrar
+          Entrar no Diário
         </button>
       </form>
 
-      <!-- Rodapé -->
       <div class="auth-footer">
         <span class="muted">Ainda não tem conta?</span>
-        <a class="auth-link" href="/signup">Criar acesso</a>
+        <a class="link-highlight" href="/signup">Criar acesso</a>
       </div>
 
     </section>
