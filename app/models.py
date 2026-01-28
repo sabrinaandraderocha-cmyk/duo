@@ -25,10 +25,10 @@ def table_args(*constraints):
 
 
 # =========================
-# CASAL
+# CASAL (Renomeado para forçar reset)
 # =========================
 class Couple(Base):
-    __tablename__ = "couples"
+    __tablename__ = "app_couples"  # <--- MUDANÇA AQUI
     __table_args__ = table_args()
 
     id = Column(Integer, primary_key=True)
@@ -41,20 +41,20 @@ class Couple(Base):
 
 
 # =========================
-# USUÁRIO (COM RECOVERY KEY)
+# USUÁRIO (Renomeado para forçar reset)
 # =========================
 class User(Base):
-    __tablename__ = "users"
+    __tablename__ = "app_users"  # <--- MUDANÇA AQUI
     __table_args__ = table_args(
-        Index("ix_users_email", "email", unique=True),
-        Index("ix_users_couple_id", "couple_id"),
+        Index("ix_app_users_email", "email", unique=True),
+        Index("ix_app_users_couple_id", "couple_id"),
     )
 
     id = Column(Integer, primary_key=True)
 
     couple_id = Column(
         Integer,
-        ForeignKey(fk("couples"), ondelete="SET NULL"),
+        ForeignKey(fk("app_couples"), ondelete="SET NULL"), # Atualizado para nova tabela
         nullable=True,
     )
 
@@ -62,7 +62,7 @@ class User(Base):
     email = Column(String(160), nullable=False)
     password_hash = Column(String(255), nullable=False)
     
-    # NOVO CAMPO: Palavra de segurança
+    # Agora a nova tabela nascerá com este campo!
     recovery_key = Column(String(100), nullable=False, default="") 
 
     couple = relationship("Couple", back_populates="users")
@@ -72,17 +72,17 @@ class User(Base):
 # REGISTRO DIÁRIO
 # =========================
 class Entry(Base):
-    __tablename__ = "diary_entries" 
+    __tablename__ = "diary_entries_v2" # <--- MUDANÇA AQUI (Só pra garantir)
     
     __table_args__ = table_args(
-        Index("ix_entries_couple_day", "couple_id", "day"),
+        Index("ix_entries_v2_couple_day", "couple_id", "day"),
     )
 
     id = Column(Integer, primary_key=True)
-    couple_id = Column(Integer, ForeignKey(fk("couples"), ondelete="CASCADE"), nullable=False)
+    couple_id = Column(Integer, ForeignKey(fk("app_couples"), ondelete="CASCADE"), nullable=False)
 
-    day = Column(String(10), nullable=False)      # YYYY-MM-DD
-    author = Column(String(8), nullable=False)    # "me" | "par"
+    day = Column(String(10), nullable=False)      
+    author = Column(String(8), nullable=False)    
 
     mood = Column(String(120), default="")
     moment_special = Column(Text, default="")
@@ -99,11 +99,11 @@ class Entry(Base):
 # DATAS ESPECIAIS
 # =========================
 class SpecialDate(Base):
-    __tablename__ = "special_dates"
-    __table_args__ = table_args(Index("ix_special_dates_couple_id", "couple_id"))
+    __tablename__ = "app_special_dates" # <--- MUDANÇA AQUI
+    __table_args__ = table_args(Index("ix_special_dates_v2_couple", "couple_id"))
 
     id = Column(Integer, primary_key=True)
-    couple_id = Column(Integer, ForeignKey(fk("couples"), ondelete="CASCADE"), nullable=False)
+    couple_id = Column(Integer, ForeignKey(fk("app_couples"), ondelete="CASCADE"), nullable=False)
 
     type = Column(String(50), nullable=False)
     label = Column(String(80), nullable=False)
@@ -117,11 +117,11 @@ class SpecialDate(Base):
 # NOTIFICAÇÕES
 # =========================
 class Notification(Base):
-    __tablename__ = "notifications"
-    __table_args__ = table_args(Index("ix_notifications_couple_id", "couple_id"))
+    __tablename__ = "app_notifications" # <--- MUDANÇA AQUI
+    __table_args__ = table_args(Index("ix_notifications_v2_couple", "couple_id"))
 
     id = Column(Integer, primary_key=True)
-    couple_id = Column(Integer, ForeignKey(fk("couples"), ondelete="CASCADE"), nullable=False)
+    couple_id = Column(Integer, ForeignKey(fk("app_couples"), ondelete="CASCADE"), nullable=False)
 
     created_at = Column(String(20), nullable=False)
     title = Column(String(120), nullable=False)
