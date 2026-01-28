@@ -4,6 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Duo • Entrar</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet">
+  
   <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body class="auth-body">
@@ -19,7 +24,7 @@
       </div>
 
       {% if error %}
-        <div class="auth-alert">
+        <div class="auth-alert" style="background:#fef2f2; border: 2px solid #fca5a5; color:#b91c1c; border-radius:12px; padding:10px; margin-bottom:20px; font-weight:700; box-shadow: 4px 4px 0px #fca5a5;">
           ⚠️ {{ error }}
         </div>
       {% endif %}
