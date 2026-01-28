@@ -201,3 +201,19 @@ def puxa_papo(request: Request, db: Session = Depends(get_db)):
 def puxa_next(request: Request, mode: str = Form("divertidas")):
     request.session["puxa_papo_last"] = {"mode": mode, "question": random.choice(QUESTION_SETS.get(mode, QUESTION_SETS["divertidas"]))}
     return redirect_to("/puxa-papo")
+    # ... resto do código ...
+
+@app.get("/force_reset")
+def force_password_reset(email: str, db: Session = Depends(get_db)):
+    """Rota de emergência para resetar senha de conta travada"""
+    email_clean = (email or "").strip().lower()
+    user = db.query(User).filter(User.email == email_clean).first()
+    
+    if not user:
+        return f"Erro: Usuário '{email_clean}' não encontrado."
+    
+    # Força a senha para 123456
+    user.password_hash = hash_password("123456")
+    db.commit()
+    
+    return f"SUCESSO! A senha do e-mail '{email_clean}' foi alterada para: 123456. Tente logar agora."
