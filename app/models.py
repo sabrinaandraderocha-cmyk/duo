@@ -5,7 +5,6 @@ from sqlalchemy import (
     String,
     ForeignKey,
     Text,
-    # UniqueConstraint,  <-- REMOVIDO para permitir múltiplos registros
     Index,
 )
 from sqlalchemy.orm import relationship
@@ -35,31 +34,14 @@ class Couple(Base):
     id = Column(Integer, primary_key=True)
     code = Column(String(16), unique=True, index=True, nullable=False)
 
-    users = relationship(
-        "User",
-        back_populates="couple",
-        cascade="all, delete-orphan",
-    )
-    entries = relationship(
-        "Entry",
-        back_populates="couple",
-        cascade="all, delete-orphan",
-    )
-    # Mantendo relacionamentos apenas para evitar erros se ainda existirem referências
-    special_dates = relationship(
-        "SpecialDate",
-        back_populates="couple",
-        cascade="all, delete-orphan",
-    )
-    notifications = relationship(
-        "Notification",
-        back_populates="couple",
-        cascade="all, delete-orphan",
-    )
+    users = relationship("User", back_populates="couple", cascade="all, delete-orphan")
+    entries = relationship("Entry", back_populates="couple", cascade="all, delete-orphan")
+    special_dates = relationship("SpecialDate", back_populates="couple", cascade="all, delete-orphan")
+    notifications = relationship("Notification", back_populates="couple", cascade="all, delete-orphan")
 
 
 # =========================
-# USUÁRIO
+# USUÁRIO (COM RECOVERY KEY)
 # =========================
 class User(Base):
     __tablename__ = "users"
@@ -79,29 +61,25 @@ class User(Base):
     name = Column(String(80), nullable=False)
     email = Column(String(160), nullable=False)
     password_hash = Column(String(255), nullable=False)
+    
+    # NOVO CAMPO: Palavra de segurança
+    recovery_key = Column(String(100), nullable=False, default="") 
 
     couple = relationship("Couple", back_populates="users")
 
 
 # =========================
-# REGISTRO DIÁRIO (CORRIGIDO)
+# REGISTRO DIÁRIO
 # =========================
 class Entry(Base):
-    # MUDANÇA: Nome da tabela alterado para forçar recriação sem travas
     __tablename__ = "diary_entries" 
     
     __table_args__ = table_args(
-        # REMOVIDO: UniqueConstraint("couple_id", "day", "author", name="uq_entry_side"),
         Index("ix_entries_couple_day", "couple_id", "day"),
     )
 
     id = Column(Integer, primary_key=True)
-
-    couple_id = Column(
-        Integer,
-        ForeignKey(fk("couples"), ondelete="CASCADE"),
-        nullable=False,
-    )
+    couple_id = Column(Integer, ForeignKey(fk("couples"), ondelete="CASCADE"), nullable=False)
 
     day = Column(String(10), nullable=False)      # YYYY-MM-DD
     author = Column(String(8), nullable=False)    # "me" | "par"
@@ -112,29 +90,20 @@ class Entry(Base):
     character = Column(String(200), default="")
     music = Column(String(200), default="")
     updated_at = Column(String(32), default="")
-
-    # Tags do diário (CSV simples)
     tags_csv = Column(Text, default="")
 
     couple = relationship("Couple", back_populates="entries")
 
 
 # =========================
-# DATAS ESPECIAIS (Mantido para compatibilidade)
+# DATAS ESPECIAIS
 # =========================
 class SpecialDate(Base):
     __tablename__ = "special_dates"
-    __table_args__ = table_args(
-        Index("ix_special_dates_couple_id", "couple_id"),
-    )
+    __table_args__ = table_args(Index("ix_special_dates_couple_id", "couple_id"))
 
     id = Column(Integer, primary_key=True)
-
-    couple_id = Column(
-        Integer,
-        ForeignKey(fk("couples"), ondelete="CASCADE"),
-        nullable=False,
-    )
+    couple_id = Column(Integer, ForeignKey(fk("couples"), ondelete="CASCADE"), nullable=False)
 
     type = Column(String(50), nullable=False)
     label = Column(String(80), nullable=False)
@@ -145,21 +114,14 @@ class SpecialDate(Base):
 
 
 # =========================
-# NOTIFICAÇÕES (Mantido para compatibilidade)
+# NOTIFICAÇÕES
 # =========================
 class Notification(Base):
     __tablename__ = "notifications"
-    __table_args__ = table_args(
-        Index("ix_notifications_couple_id", "couple_id"),
-    )
+    __table_args__ = table_args(Index("ix_notifications_couple_id", "couple_id"))
 
     id = Column(Integer, primary_key=True)
-
-    couple_id = Column(
-        Integer,
-        ForeignKey(fk("couples"), ondelete="CASCADE"),
-        nullable=False,
-    )
+    couple_id = Column(Integer, ForeignKey(fk("couples"), ondelete="CASCADE"), nullable=False)
 
     created_at = Column(String(20), nullable=False)
     title = Column(String(120), nullable=False)
