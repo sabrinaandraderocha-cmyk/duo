@@ -2,57 +2,75 @@
 {% block title %}Puxa-papo • Duo{% endblock %}
 
 {% block content %}
-  <div class="section-title">
-    <div>
-      <h2>Puxa-papo 💬</h2>
-      <p class="muted">
-        Um jogo rápido pra vocês se encontrarem no dia.
-        {% if partner_name %} Você + <strong>{{ partner_name }}</strong>. {% endif %}
-      </p>
-    </div>
-    <div class="section-actions">
-      <a class="btn secondary" href="/">Voltar</a>
-    </div>
+<div class="wrap game-container">
+
+  <div style="text-align: center; margin-bottom: 30px;">
+    <h2 style="font-size: 28px; margin: 0 0 8px 0; color: var(--accent);">Puxa-papo 💬</h2>
+    <p class="muted">
+      Um jogo rápido pra reconectar.<br>
+      {% if partner_name %} Você + <strong>{{ partner_name }}</strong> {% endif %}
+    </p>
   </div>
 
-  <div class="card">
-    <h3>Escolha o modo</h3>
+  <div class="question-card">
+    
+    {% if last %}
+      <div class="quote-icon">“</div>
+      
+      <div class="question-meta">
+        {{ dict(modes).get(last.mode, 'Pergunta') }}
+      </div>
 
-    <form method="post" action="/puxa-papo/next" style="display:flex; gap:10px; flex-wrap:wrap; margin-top:10px;">
-      <select name="mode" class="input" style="min-width:220px;">
-        {% for key,label in modes %}
-          <option value="{{ key }}" {% if last and last.mode==key %}selected{% endif %}>{{ label }}</option>
-        {% endfor %}
-      </select>
+      <div class="question-text">
+        {{ last.question }}
+      </div>
 
-      <button class="btn primary" type="submit">Sortear pergunta</button>
+      <button 
+        class="btn tiny secondary" 
+        onclick="navigator.clipboard.writeText(`{{ last.question|replace('`','\\`') }}`); this.innerText = 'Copiado! ✅'; setTimeout(() => this.innerText = '📋 Copiar', 2000);"
+        style="margin-top: 10px;"
+      >
+        📋 Copiar texto
+      </button>
+
+    {% else %}
+      <div style="font-size: 50px; margin-bottom: 20px;">🎲</div>
+      <h3 style="margin: 0 0 10px; font-size: 20px;">Vamos jogar?</h3>
+      <p class="muted" style="max-width: 300px;">
+        Escolha um modo abaixo e clique em sortear para receber uma pergunta surpresa.
+      </p>
+    {% endif %}
+
+  </div>
+
+  <div class="game-controls">
+    
+    <form method="post" action="/puxa-papo/next" style="display: flex; gap: 10px; width: 100%; flex-wrap: wrap;">
+      
+      <div style="flex: 1; min-width: 200px;">
+        <select name="mode" style="height: 48px; cursor: pointer;">
+          {% for key,label in modes %}
+            <option value="{{ key }}" {% if last and last.mode==key %}selected{% endif %}>
+              {{ label }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <button class="btn primary" type="submit" style="flex: 1; white-space: nowrap;">
+        {% if last %}
+          🔄 Outra pergunta
+        {% else %}
+          ✨ Sortear Primeira
+        {% endif %}
+      </button>
+
     </form>
   </div>
 
-  <div class="card" style="margin-top:14px;">
-    <h3>Pergunta</h3>
-
-    {% if last %}
-      <p style="font-size:1.1rem; line-height:1.6; margin-top:10px;">
-        {{ last.question }}
-      </p>
-      <p class="muted small" style="margin-top:10px;">
-        Sorteada em {{ last.at }}
-      </p>
-
-      <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:12px;">
-        <button class="btn secondary" type="button" onclick="navigator.clipboard.writeText(`{{ last.question|replace('`','\\`') }}`)">
-          📋 Copiar
-        </button>
-        <form method="post" action="/puxa-papo/next" style="margin:0;">
-          <input type="hidden" name="mode" value="{{ last.mode }}">
-          <button class="btn primary" type="submit">Outra do mesmo modo</button>
-        </form>
-      </div>
-    {% else %}
-      <p class="muted" style="margin-top:10px;">
-        Clique em “Sortear pergunta” pra começar.
-      </p>
-    {% endif %}
+  <div style="text-align: center; margin-top: 24px;">
+    <a href="/" class="muted" style="font-size: 14px; text-decoration: underline;">Voltar para o Diário</a>
   </div>
+
+</div>
 {% endblock %}
