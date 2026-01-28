@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}Duo • Meu Perfil{% endblock %}
+
+{% block content %}
+<div class="wrap" style="max-width: 500px;">
+  
+  <div class="card" style="text-align: center; margin-bottom: 30px;">
+    <div style="width: 80px; height: 80px; background: var(--primary); color: #fff; font-size: 32px; font-weight: 800; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; box-shadow: 4px 4px 0px #c2410c;">
+      {{ user.name[0] | upper }}
+    </div>
+    <h2>Olá, {{ user.name }}!</h2>
+    <p class="muted">{{ user.email }}</p>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      <h3>🔐 Alterar Senha</h3>
+    </div>
+
+    {% if error %}
+      <div style="background:#fef2f2; border: 2px solid #fca5a5; color:#b91c1c; border-radius:12px; padding:10px; margin-bottom:20px; font-weight:700;">
+        ⚠️ {{ error }}
+      </div>
+    {% endif %}
+
+    {% if success %}
+      <div style="background:#f0fdf4; border: 2px solid #86efac; color:#15803d; border-radius:12px; padding:10px; margin-bottom:20px; font-weight:700;">
+        ✅ {{ success }}
+      </div>
+    {% endif %}
+
+    <form method="post" action="/profile/update_password">
+      <div class="input-group">
+        <label>Nova Senha</label>
+        <input type="password" name="new_password" placeholder="Digite uma senha nova" required>
+      </div>
+      
+      <button class="btn primary" type="submit" style="width: 100%;">
+        Salvar Nova Senha
+      </button>
+    </form>
+  </div>
+
+  <div style="text-align: center; margin-top: 24px;">
+    <a href="/" class="btn secondary">⬅️ Voltar para o Diário</a>
+  </div>
+
+</div>
+{% endblock %}
