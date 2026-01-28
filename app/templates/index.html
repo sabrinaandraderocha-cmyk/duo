@@ -123,13 +123,20 @@
               
               <div style="flex:1">
                 {% if me_entry %}
-                  <div class="journal-card card-me" style="padding: 16px; min-height: 100%;">
-                    <div style="font-size: 13px; color: var(--muted); margin-bottom: 8px;">
-                      {{ user.name }} escreveu:
+                  <div class="journal-card card-me" style="padding: 16px; min-height: 100%; position: relative;">
+                    
+                    <form action="/delete_entry/{{ me_entry.id }}" method="post" onsubmit="return confirm('Tem certeza que quer apagar este registro?');" style="position: absolute; top: 12px; right: 12px;">
+                      <button type="submit" style="background: none; border: none; cursor: pointer; font-size: 18px; opacity: 0.6; transition: 0.2s;" title="Apagar">🗑️</button>
+                    </form>
+
+                    <div style="font-size: 13px; color: var(--muted); margin-bottom: 8px; padding-right: 25px;">
+                      {{ user.name }} • {{ me_entry.time }}
                     </div>
+                    
                     <div class="read-text" style="background: var(--accent-light); border:none;">
                       {{ me_entry.moment_special }}
                     </div>
+                    
                     {% if me_entry.mood %}
                       <div style="margin-top:8px; font-size:13px; color:var(--muted)">✨ {{ me_entry.mood }}</div>
                     {% endif %}
@@ -147,11 +154,13 @@
                 {% if par_entry %}
                   <div class="journal-card card-par" style="padding: 16px; min-height: 100%;">
                     <div style="font-size: 13px; color: var(--muted); margin-bottom: 8px;">
-                      {{ partner_name }} escreveu:
+                      {{ partner_name }} • {{ par_entry.time }}
                     </div>
+                    
                     <div class="read-text" style="background: #fff; border: 1px solid var(--border);">
                       {{ par_entry.moment_special }}
                     </div>
+                    
                     {% if par_entry.mood %}
                       <div style="margin-top:8px; font-size:13px; color:var(--muted)">✨ {{ par_entry.mood }}</div>
                     {% endif %}
