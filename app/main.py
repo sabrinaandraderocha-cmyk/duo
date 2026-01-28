@@ -2,7 +2,7 @@ import os
 import secrets
 import random
 from datetime import date, datetime
-from itertools import zip_longest # Novo import para alinhar os registros lado a lado
+from itertools import zip_longest
 
 from fastapi import FastAPI, Request, Form, Depends
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -35,7 +35,7 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
 
 # =====================================================
-# DADOS ESTÁTICOS & HELPERS
+# DADOS ESTÁTICOS
 # =====================================================
 
 DIARY_TAGS = {
@@ -48,42 +48,28 @@ DIARY_TAGS = {
 }
 
 PROMPTS_HUMOR = [
-    "Ex: Leve e apaixonada...",
-    "Ex: Cansada, mas feliz...",
-    "Ex: Com saudade do fim de semana...",
-    "Ex: Precisando de um abraço...",
-    "Ex: Grata por ter você...",
-    "Ex: Produtiva e focada...",
+    "Ex: Leve e apaixonada...", "Ex: Cansada, mas feliz...", "Ex: Com saudade do fim de semana...",
+    "Ex: Precisando de um abraço...", "Ex: Grata por ter você...", "Ex: Produtiva e focada...",
 ]
 
 PROMPTS_MOMENTO = [
-    "O que te fez sorrir hoje?",
-    "Qual foi a melhor parte do dia?",
-    "Teve alguma surpresa?",
-    "Uma coisa simples que foi boa...",
-    "Um detalhe que você não quer esquecer...",
-    "Algo que te fez lembrar de nós...",
+    "O que te fez sorrir hoje?", "Qual foi a melhor parte do dia?", "Teve alguma surpresa?",
+    "Uma coisa simples que foi boa...", "Um detalhe que você não quer esquecer...",
 ]
 
 QUESTION_SETS = {
     "divertidas": [
-        "Se a gente fosse um filme, qual seria o gênero?",
-        "Qual seria nosso nome de dupla criminosa?",
-        "Qual mania minha você acha estranhamente fofa?",
-        "Que música tocaria se a gente entrasse numa festa em câmera lenta?",
+        "Se a gente fosse um filme, qual seria o gênero?", "Qual seria nosso nome de dupla criminosa?",
+        "Qual mania minha você acha estranhamente fofa?", "Que música tocaria se a gente entrasse numa festa em câmera lenta?",
         "Se a gente ganhasse na loteria hoje, qual a primeira coisa que faríamos?",
     ],
     "romanticas": [
-        "O que você mais admira em mim hoje?",
-        "Qual foi o momento exato que você percebeu que me amava?",
-        "Como posso fazer seu dia 1% melhor amanhã?",
-        "Qual gesto meu te faz sentir mais segurança?",
+        "O que você mais admira em mim hoje?", "Qual foi o momento exato que você percebeu que me amava?",
+        "Como posso fazer seu dia 1% melhor amanhã?", "Qual gesto meu te faz sentir mais segurança?",
     ],
     "picantes_leves": [
-        "Hoje eu te daria um beijo com sabor de...",
-        "De 0 a 10, quão perigoso está seu pensamento agora?",
-        "Qual parte do meu corpo chamou sua atenção hoje?",
-        "Se tivéssemos 1 hora sozinhos agora, o que faríamos?",
+        "Hoje eu te daria um beijo com sabor de...", "De 0 a 10, quão perigoso está seu pensamento agora?",
+        "Qual parte do meu corpo chamou sua atenção hoje?", "Se tivéssemos 1 hora sozinhos agora, o que faríamos?",
     ],
 }
 
@@ -92,20 +78,13 @@ def redirect_to(url: str):
 
 def current_user(request: Request, db: Session):
     uid = request.session.get("uid")
-    if not uid:
-        return None
+    if not uid: return None
     return db.get(User, uid)
 
 def get_couple_roles(db: Session, couple_id: int, my_user_id: int):
-    users = (
-        db.query(User)
-        .filter(User.couple_id == couple_id)
-        .order_by(User.id.asc())
-        .all()
-    )
+    users = db.query(User).filter(User.couple_id == couple_id).order_by(User.id.asc()).all()
     if len(users) < 2:
         return {"self_role": "me", "partner_role": "par", "partner_name": "Aguardando..."}
-
     first, second = users[0], users[1]
     if my_user_id == first.id:
         return {"self_role": "me", "partner_role": "par", "partner_name": second.name}
@@ -119,13 +98,13 @@ def join_tags(tags: list[str]):
     seen = []
     for t in (tags or []):
         t = (t or "").strip()
-        if t and t not in seen:
-            seen.append(t)
+        if t and t not in seen: seen.append(t)
     return ",".join(seen)
 
 # =====================================================
-# ROTAS DE AUTENTICAÇÃO
+# ROTAS DE AUTENTICAÇÃO (LOGIN / SIGNUP / FORGOT)
 # =====================================================
+
 @app.get("/login", response_class=HTMLResponse)
 def login_page(request: Request):
     return templates.TemplateResponse("login.html", {"request": request})
@@ -144,17 +123,64 @@ def signup_page(request: Request):
     return templates.TemplateResponse("signup.html", {"request": request})
 
 @app.post("/signup")
-def signup(request: Request, name: str = Form(...), email: str = Form(...), password: str = Form(...), db: Session = Depends(get_db)):
+def signup(
+    request: Request, 
+    name: str = Form(...), 
+    email: str = Form(...), 
+    password: str = Form(...),
+    recovery_key: str = Form(...), # NOVO
+    db: Session = Depends(get_db)
+):
     name_norm = (name or "").strip()
     email_norm = (email or "").strip().lower()
+    recovery_norm = (recovery_key or "").strip().lower()
+
     if db.query(User).filter(User.email == email_norm).first():
         return templates.TemplateResponse("signup.html", {"request": request, "error": "Este e-mail já tem conta."}, status_code=400)
-    user = User(name=name_norm, email=email_norm, password_hash=hash_password(password))
+    
+    user = User(
+        name=name_norm, 
+        email=email_norm, 
+        password_hash=hash_password(password),
+        recovery_key=recovery_norm # SALVANDO
+    )
     db.add(user)
     db.commit()
     db.refresh(user)
     request.session["uid"] = user.id
     return redirect_to("/pair")
+
+@app.get("/forgot", response_class=HTMLResponse)
+def forgot_page(request: Request):
+    return templates.TemplateResponse("forgot.html", {"request": request})
+
+@app.post("/forgot")
+def forgot_submit(
+    request: Request,
+    email: str = Form(...),
+    recovery_key: str = Form(...),
+    new_password: str = Form(...),
+    db: Session = Depends(get_db),
+):
+    email_norm = (email or "").strip().lower()
+    key_norm = (recovery_key or "").strip().lower()
+
+    user = db.query(User).filter(User.email == email_norm).first()
+
+    if not user or user.recovery_key != key_norm:
+        return templates.TemplateResponse(
+            "forgot.html",
+            {"request": request, "error": "E-mail ou Palavra Secreta incorretos."},
+            status_code=400,
+        )
+
+    user.password_hash = hash_password(new_password)
+    db.commit()
+
+    return templates.TemplateResponse(
+        "login.html", 
+        {"request": request, "success": "Senha alterada com sucesso! Faça login."}
+    )
 
 @app.get("/logout")
 def logout(request: Request):
@@ -203,7 +229,7 @@ def pair_join(request: Request, code: str = Form(...), db: Session = Depends(get
     return redirect_to("/")
 
 # =====================================================
-# HOME (Lógica Alterada para Múltiplos Registros)
+# HOME
 # =====================================================
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request, db: Session = Depends(get_db)):
@@ -213,16 +239,14 @@ def home(request: Request, db: Session = Depends(get_db)):
 
     roles = get_couple_roles(db, u.couple_id, u.id)
 
-    # Busca todas as entradas
     entries = (
         db.query(Entry)
         .filter(Entry.couple_id == u.couple_id)
-        .order_by(Entry.day.desc(), Entry.id.desc()) # Ordena por dia e depois pelo mais recente
+        .order_by(Entry.day.desc(), Entry.id.desc())
         .all()
     )
 
     by_day = {}
-
     for e in entries:
         if e.day not in by_day:
             by_day[e.day] = {
@@ -233,36 +257,25 @@ def home(request: Request, db: Session = Depends(get_db)):
             }
         
         data = {
-            "mood": e.mood or "",
-            "moment_special": e.moment_special or "",
-            "love_action": e.love_action or "",
-            "character": e.character or "",
-            "music": e.music or "",
-            "tags": split_tags(getattr(e, "tags_csv", "")),
+            "mood": e.mood or "", "moment_special": e.moment_special or "", "love_action": e.love_action or "",
+            "character": e.character or "", "music": e.music or "", "tags": split_tags(getattr(e, "tags_csv", "")),
         }
 
-        if e.author == roles["self_role"]:
-            by_day[e.day]["me_entries"].append(data)
-        elif e.author == roles["partner_role"]:
-            by_day[e.day]["par_entries"].append(data)
+        if e.author == roles["self_role"]: by_day[e.day]["me_entries"].append(data)
+        elif e.author == roles["partner_role"]: by_day[e.day]["par_entries"].append(data)
 
-    # Organiza a timeline
     timeline = []
     sorted_days = sorted(by_day.keys(), reverse=True)
     
     for day in sorted_days:
         day_obj = by_day[day]
-        # Cria pares de linhas para exibir lado a lado (zip_longest)
-        # Ex: Se eu tenho 3 registros e o par 1, cria 3 linhas.
         rows = list(zip_longest(day_obj["me_entries"], day_obj["par_entries"], fillvalue=None))
         day_obj["rows"] = rows
         timeline.append(day_obj)
 
-    # Checa sinergia de hoje
     today_iso = date.today().isoformat()
     has_today = any(d['day'] == today_iso for d in timeline)
     
-    # Cálculos de sinergia
     synergy_percent = 0
     if has_today:
         today_data = next(d for d in timeline if d['day'] == today_iso)
@@ -277,35 +290,17 @@ def home(request: Request, db: Session = Depends(get_db)):
     return templates.TemplateResponse(
         "index.html",
         {
-            "request": request,
-            "user": u,
-            "partner_name": roles["partner_name"],
-            "timeline": timeline,
-            "diary_tags": DIARY_TAGS,
-            "today_iso": today_iso,
-            "has_today": has_today,
-            "synergy_percent": synergy_percent,
-            "saudacao": saudacao,
-            "ph_humor": random.choice(PROMPTS_HUMOR),
-            "ph_momento": random.choice(PROMPTS_MOMENTO)
+            "request": request, "user": u, "partner_name": roles["partner_name"], "timeline": timeline,
+            "diary_tags": DIARY_TAGS, "today_iso": today_iso, "has_today": has_today, "synergy_percent": synergy_percent,
+            "saudacao": saudacao, "ph_humor": random.choice(PROMPTS_HUMOR), "ph_momento": random.choice(PROMPTS_MOMENTO)
         },
     )
 
-# =====================================================
-# SALVAR (Agora cria NOVO em vez de editar)
-# =====================================================
 @app.post("/save_side")
 def save_side(
-    request: Request,
-    side: str = Form(...),
-    mood: str = Form(""),
-    moment_special: str = Form(""),
-    love_action: str = Form(""),
-    character: str = Form(""),
-    music: str = Form(""),
-    tags: list[str] = Form(default=[]),
-    day: str = Form(""), 
-    db: Session = Depends(get_db),
+    request: Request, side: str = Form(...), mood: str = Form(""), moment_special: str = Form(""),
+    love_action: str = Form(""), character: str = Form(""), music: str = Form(""),
+    tags: list[str] = Form(default=[]), day: str = Form(""), db: Session = Depends(get_db),
 ):
     u = current_user(request, db)
     if not u or not u.couple_id: return redirect_to("/")
@@ -315,7 +310,6 @@ def save_side(
 
     if not day: day = date.today().isoformat()
 
-    # MUDANÇA: Não busca mais existente. Sempre cria novo.
     entry = Entry(couple_id=u.couple_id, day=day, author=author_role)
     db.add(entry)
 
@@ -327,8 +321,7 @@ def save_side(
     entry.updated_at = datetime.now().strftime("%d/%m/%Y %H:%M")
 
     clean_tags = [t for t in (tags or []) if t in DIARY_TAGS]
-    if hasattr(entry, "tags_csv"):
-        entry.tags_csv = join_tags(clean_tags)
+    if hasattr(entry, "tags_csv"): entry.tags_csv = join_tags(clean_tags)
 
     db.commit()
     return redirect_to("/")
