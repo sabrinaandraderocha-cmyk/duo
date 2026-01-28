@@ -10,66 +10,39 @@
   <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body class="auth-body">
-
   <main class="auth-wrap">
     <section class="auth-card">
-
       <div class="auth-head">
         <h1 class="auth-logo">Criar Conta ✨</h1>
-        <p class="auth-subtitle">
-          Comece a guardar suas memórias hoje.
-        </p>
+        <p class="auth-subtitle">Comece a guardar suas memórias hoje.</p>
       </div>
 
       {% if error %}
-        <div class="auth-alert" style="background:#fef2f2; border: 2px solid #fca5a5; color:#b91c1c; border-radius:12px; padding:10px; margin-bottom:20px; font-weight:700; box-shadow: 4px 4px 0px #fca5a5;">
-          ⚠️ {{ error }}
-        </div>
+        <div class="auth-alert">⚠️ {{ error }}</div>
       {% endif %}
 
       <form method="post" action="/signup" class="auth-form">
-
         <div class="auth-field">
           <label>Seu Nome</label>
           <input name="name" type="text" placeholder="Como você gosta de ser chamado?" required autofocus>
         </div>
-
         <div class="auth-field">
           <label>E-mail</label>
           <input name="email" type="email" placeholder="seuemail@exemplo.com" required autocomplete="email">
         </div>
-
         <div class="auth-field">
           <label>Senha</label>
           <input name="password" type="password" placeholder="Uma senha forte" required autocomplete="new-password">
         </div>
 
-        <div class="auth-field" style="background: #f0f9ff; padding: 15px; border-radius: 16px; border: 2px dashed #bae6fd;">
-          <label style="color: #0369a1;">Palavra de Segurança 🛡️</label>
-          <input 
-            name="recovery_key" 
-            type="text" 
-            placeholder="Ex: nome da mãe, primeiro bicho..." 
-            required
-            style="border-color: #bae6fd;"
-          >
-          <p class="muted" style="font-size: 12px; margin-top: 5px; color: #0284c7;">
-            Se você esquecer a senha, pediremos isso.
-          </p>
-        </div>
-
-        <button class="btn primary auth-btn" type="submit">
-          Criar Conta
-        </button>
+        <button class="btn primary auth-btn" type="submit">Criar Conta</button>
       </form>
 
       <div class="auth-footer">
         <span class="muted">Já tem conta?</span>
         <a class="link-highlight" href="/login">Entrar</a>
       </div>
-
     </section>
   </main>
-
 </body>
 </html>
