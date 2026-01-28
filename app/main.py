@@ -52,6 +52,25 @@ DIARY_TAGS = {
     "fofoca": "👀 Tenho fofoca",
 }
 
+# Frases para variar os Placeholders (Inspirar escrita)
+PROMPTS_HUMOR = [
+    "Ex: Leve e apaixonada...",
+    "Ex: Cansada, mas feliz...",
+    "Ex: Com saudade do fim de semana...",
+    "Ex: Precisando de um abraço...",
+    "Ex: Grata por ter você...",
+    "Ex: Produtiva e focada...",
+]
+
+PROMPTS_MOMENTO = [
+    "O que te fez sorrir hoje?",
+    "Qual foi a melhor parte do dia?",
+    "Teve alguma surpresa?",
+    "Uma coisa simples que foi boa...",
+    "Um detalhe que você não quer esquecer...",
+    "Algo que te fez lembrar de nós...",
+]
+
 # Perguntas do Puxa-Papo
 QUESTION_SETS = {
     "divertidas": [
@@ -331,9 +350,18 @@ def home(request: Request, db: Session = Depends(get_db)):
     for day in sorted_days:
         timeline.append(by_day[day])
 
-    # Se a lista estiver vazia ou hoje não tiver registro, podemos criar um "placeholder" visual no template
+    # Se a lista estiver vazia ou hoje não tiver registro
     today_iso = date.today().isoformat()
     has_today = any(d['day'] == today_iso for d in timeline)
+
+    # === Lógica de Saudação (NOVO) ===
+    hora = datetime.now().hour
+    if 5 <= hora < 12:
+        saudacao = "Bom dia"
+    elif 12 <= hora < 18:
+        saudacao = "Boa tarde"
+    else:
+        saudacao = "Boa noite"
 
     return templates.TemplateResponse(
         "index.html",
@@ -344,7 +372,11 @@ def home(request: Request, db: Session = Depends(get_db)):
             "timeline": timeline,
             "diary_tags": DIARY_TAGS,
             "today_iso": today_iso,
-            "has_today": has_today
+            "has_today": has_today,
+            # Passando as novas variáveis para o template
+            "saudacao": saudacao,
+            "ph_humor": random.choice(PROMPTS_HUMOR),
+            "ph_momento": random.choice(PROMPTS_MOMENTO)
         },
     )
 
