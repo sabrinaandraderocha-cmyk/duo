@@ -8,7 +8,6 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet">
-  
   <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body class="auth-body">
@@ -29,6 +28,12 @@
         </div>
       {% endif %}
 
+      {% if success %}
+        <div class="auth-alert" style="background:#f0fdf4; border: 2px solid #86efac; color:#15803d; border-radius:12px; padding:10px; margin-bottom:20px; font-weight:700; box-shadow: 4px 4px 0px #86efac;">
+          ✅ {{ success }}
+        </div>
+      {% endif %}
+
       <form method="post" action="/login" class="auth-form">
 
         <div class="auth-field">
@@ -45,8 +50,9 @@
         </div>
 
         <div class="auth-field">
-          <div class="field-head">
-            <label for="password">Senha</label>
+          <div class="field-head" style="display:flex; justify-content:space-between; align-items:center;">
+            <label for="password" style="margin:0;">Senha</label>
+            <a href="/forgot" style="font-size:12px; color:var(--primary); font-weight:700; text-decoration: underline;">Esqueci a senha</a>
           </div>
           <input
             id="password"
