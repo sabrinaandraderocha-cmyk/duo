@@ -4,36 +4,45 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}Duo{% endblock %}</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
   <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
-  <header class="top">
-    <div class="brand">
-      <h1><a href="/" class="brandlink">Duo 💙</a></h1>
-      <p class="subtitle">
-        {% if user %}
-          Diário do casal:
-          <strong>{{ user.name }}</strong>
-          {% if partner_name %}+ <strong>{{ partner_name }}</strong>{% endif %}
-        {% else %}
-          Diário do casal
-        {% endif %}
-      </p>
-    </div>
 
-    <nav class="nav">
-      {% if user %}
-        <a class="btn secondary" href="/">Timeline</a>
-        <a class="btn secondary" href="/puxa-papo">💬 Puxa-papo</a>
-        <a class="btn secondary" href="/logout">Sair</a>
-      {% else %}
-        <a class="btn secondary" href="/login">Entrar</a>
-      {% endif %}
-    </nav>
+  <header class="top">
+    <div class="topbar">
+      
+      <div class="brand">
+        <h1><a href="/">Duo 💙</a></h1>
+        <p class="subtitle">
+          {% if user %}
+            {{ user.name }} {% if partner_name %}+ {{ partner_name }}{% endif %}
+          {% else %}
+            Diário de momentos a dois
+          {% endif %}
+        </p>
+      </div>
+
+      <nav class="quick-actions">
+        {% if user %}
+          <a class="btn secondary tiny" href="/">📅 Timeline</a>
+          <a class="btn secondary tiny" href="/puxa-papo">💬 Puxa-papo</a>
+          <a class="btn secondary tiny" href="/logout">Sair</a>
+        {% else %}
+          <a class="btn secondary tiny" href="/login">Entrar</a>
+        {% endif %}
+      </nav>
+
+    </div>
   </header>
 
-  <main class="wrap">
+  <main>
     {% block content %}{% endblock %}
   </main>
+
 </body>
 </html>
