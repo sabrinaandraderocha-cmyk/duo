@@ -342,3 +342,33 @@ def puxa_papo_next(request: Request, mode: str = Form("divertidas")):
     if mode not in QUESTION_SETS: mode = "divertidas"
     request.session["puxa_papo_last"] = {"mode": mode, "question": random.choice(QUESTION_SETS[mode])}
     return redirect_to("/puxa-papo")
+    from sqlalchemy import text # <--- Adicione esse import no topo do arquivo se não tiver
+
+# ... (resto do código) ...
+
+# =====================================================
+# ROTA DE EMERGÊNCIA (CORRIGIR BANCO)
+# =====================================================
+@app.get("/fix_db")
+def fix_database_structure(db: Session = Depends(get_db)):
+    try:
+        # 1. Adiciona a coluna 'recovery_key' na tabela users se não existir
+        db.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS recovery_key VARCHAR(100) DEFAULT '';"))
+        
+        # 2. Remove a trava que impede salvar mais de uma vez por dia (uq_entry_side)
+        # Nota: O nome da constraint pode variar, mas geralmente o SQLAlchemy nomeia assim ou como 'entries_couple_id_day_author_key'
+        try:
+            db.execute(text("ALTER TABLE entries DROP CONSTRAINT uq_entry_side;"))
+        except Exception:
+            pass # Se der erro é pq já foi removida ou tem outro nome, seguimos em frente
+            
+        try:
+             # Tenta remover pelo nome automático do Postgres caso o de cima falhe
+            db.execute(text("ALTER TABLE entries DROP CONSTRAINT entries_couple_id_day_author_key;"))
+        except Exception:
+            pass
+
+        db.commit()
+        return "SUCESSO! O banco foi atualizado. Agora você pode salvar registros e recuperar senha."
+    except Exception as e:
+        return f"Erro ao tentar corrigir: {e}"
