@@ -86,6 +86,7 @@ def login_page(request: Request): return templates.TemplateResponse("login.html"
 def login(request: Request, email: str = Form(...), password: str = Form(...), db: Session = Depends(get_db)):
     email_norm = (email or "").strip().lower()
     user = db.query(User).filter(User.email == email_norm).first()
+    # AQUI: Se verify_password retornar False (mesmo com erro), ele nega o acesso
     if not user or not verify_password(password, user.password_hash):
         return templates.TemplateResponse("login.html", {"request": request, "error": "E-mail ou senha incorretos."}, status_code=400)
     request.session["uid"] = user.id
@@ -144,7 +145,6 @@ def home(request: Request, db: Session = Depends(get_db)):
     if not u.couple_id: return redirect_to("/pair")
 
     roles = get_couple_roles(db, u.couple_id, u.id)
-    # Busca todas as entradas para montar a timeline
     entries = db.query(Entry).filter(Entry.couple_id == u.couple_id).order_by(Entry.day.desc(), Entry.id.desc()).all()
     
     by_day = {}
@@ -180,15 +180,11 @@ def save_side(request: Request, side: str = Form(...), mood: str = Form(""), mom
     u = current_user(request, db)
     if not u or not u.couple_id: return redirect_to("/")
     roles = get_couple_roles(db, u.couple_id, u.id)
-    
-    # Cria nova entrada
     entry = Entry(couple_id=u.couple_id, day=date.today().isoformat(), author=roles["self_role"] if side == "self" else roles["partner_role"])
     entry.mood = mood; entry.moment_special = moment_special; entry.love_action = love_action
     entry.character = character; entry.music = music; entry.updated_at = datetime.now().strftime("%d/%m %H:%M")
     entry.tags_csv = join_tags([t for t in tags if t in DIARY_TAGS])
-    
-    db.add(entry)
-    db.commit()
+    db.add(entry); db.commit()
     return redirect_to("/")
 
 @app.get("/puxa-papo", response_class=HTMLResponse)
@@ -201,19 +197,20 @@ def puxa_papo(request: Request, db: Session = Depends(get_db)):
 def puxa_next(request: Request, mode: str = Form("divertidas")):
     request.session["puxa_papo_last"] = {"mode": mode, "question": random.choice(QUESTION_SETS.get(mode, QUESTION_SETS["divertidas"]))}
     return redirect_to("/puxa-papo")
-    # ... resto do código ...
 
+# =====================================================
+# ROTA DE EMERGÊNCIA - RESET DE SENHA
+# =====================================================
 @app.get("/force_reset")
 def force_password_reset(email: str, db: Session = Depends(get_db)):
-    """Rota de emergência para resetar senha de conta travada"""
     email_clean = (email or "").strip().lower()
     user = db.query(User).filter(User.email == email_clean).first()
     
     if not user:
-        return f"Erro: Usuário '{email_clean}' não encontrado."
+        return f"Erro: Usuário '{email_clean}' não encontrado no banco."
     
-    # Força a senha para 123456
+    # Define a senha para: 123456
     user.password_hash = hash_password("123456")
     db.commit()
     
-    return f"SUCESSO! A senha do e-mail '{email_clean}' foi alterada para: 123456. Tente logar agora."
+    return f"SUCESSO! Senha de '{email_clean}' alterada para: 123456. Tente logar agora."
