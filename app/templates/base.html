@@ -17,7 +17,7 @@
     <div class="topbar">
       
       <div class="brand">
-        <h1><a href="/">Duo 💙</a></h1>
+        <h1><a href="/">Duo💙</a></h1>
         <p class="subtitle">
           {% if user %}
             {{ user.name }} {% if partner_name %}+ {{ partner_name }}{% endif %}
@@ -29,7 +29,8 @@
 
       <nav class="quick-actions">
         {% if user %}
-          <a class="btn secondary tiny" href="/puxa-papo">💬 Puxa-papo</a>
+          <a class="btn secondary tiny" href="/puxa-papo">💬 Jogo</a>
+          <a class="btn secondary tiny" href="/profile">👤 Perfil</a>
           <a class="btn secondary tiny" href="/logout">Sair</a>
         {% else %}
           <a class="btn secondary tiny" href="/login">Entrar</a>
