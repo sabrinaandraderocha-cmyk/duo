@@ -11,7 +11,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from sqlalchemy.orm import Session
 
 from .db import Base, engine, get_db
-from .models import User, Couple, Entry, SpecialDate, Notification
+from .models import User, Couple, Entry
 from .security import hash_password, verify_password
 
 # =====================================================
@@ -46,14 +46,6 @@ DIARY_TAGS = {
     "estressada": "😤 Hoje estou estressada",
     "saudades": "💋 Saudades, quero beijo",
 }
-
-SPECIAL_DATE_TYPES = [
-    {"key": "primeiro_encontro", "label": "Primeiro encontro"},
-    {"key": "primeiro_beijo", "label": "Primeiro beijo"},
-    {"key": "primeira_vez", "label": "Primeira vez"},
-    {"key": "casamento", "label": "Casamento / união"},
-    {"key": "outro", "label": "Outro"},
-]
 
 QUESTION_SETS = {
     "divertidas": [
@@ -109,22 +101,13 @@ def split_tags(csv: str):
 
 def join_tags(tags: list[str]):
     seen = []
-    for t in tags:
+    for t in (tags or []):
+        t = (t or "").strip()
+        if not t:
+            continue
         if t not in seen:
             seen.append(t)
     return ",".join(seen)
-
-def create_notification(db: Session, couple_id: int, title: str, body: str = ""):
-    db.add(
-        Notification(
-            couple_id=couple_id,
-            created_at=datetime.now().strftime("%d/%m/%Y"),
-            title=title[:120],
-            body=body[:400],
-            is_read=0,
-        )
-    )
-    db.commit()
 
 # =====================================================
 # Auth
@@ -140,7 +123,9 @@ def login(
     password: str = Form(...),
     db: Session = Depends(get_db),
 ):
-    user = db.query(User).filter(User.email == email.lower()).first()
+    email_norm = (email or "").strip().lower()
+    user = db.query(User).filter(User.email == email_norm).first()
+
     if not user or not verify_password(password, user.password_hash):
         return templates.TemplateResponse(
             "login.html",
@@ -163,7 +148,10 @@ def signup(
     password: str = Form(...),
     db: Session = Depends(get_db),
 ):
-    if db.query(User).filter(User.email == email.lower()).first():
+    name_norm = (name or "").strip()
+    email_norm = (email or "").strip().lower()
+
+    if db.query(User).filter(User.email == email_norm).first():
         return templates.TemplateResponse(
             "signup.html",
             {"request": request, "error": "E-mail já cadastrado."},
@@ -171,8 +159,8 @@ def signup(
         )
 
     user = User(
-        name=name.strip(),
-        email=email.lower(),
+        name=name_norm,
+        email=email_norm,
         password_hash=hash_password(password),
     )
     db.add(user)
@@ -196,22 +184,35 @@ def pair_page(request: Request, db: Session = Depends(get_db)):
     if not u:
         return redirect_to("/login")
 
+    couple = db.get(Couple, u.couple_id) if u.couple_id else None
     partner_name = None
     if u.couple_id:
         partner_name = get_roles(db, u.couple_id, u.id)["partner_name"]
 
     return templates.TemplateResponse(
         "pair.html",
-        {"request": request, "user": u, "partner_name": partner_name},
+        {"request": request, "user": u, "couple": couple, "partner_name": partner_name},
     )
 
 @app.post("/pair/create")
 def pair_create(request: Request, db: Session = Depends(get_db)):
     u = current_user(request, db)
-    if not u or u.couple_id:
+    if not u:
+        return redirect_to("/login")
+    if u.couple_id:
         return redirect_to("/")
 
-    code = secrets.token_hex(4)
+    # tenta gerar um código único
+    code = None
+    for _ in range(10):
+        candidate = secrets.token_hex(4)
+        exists = db.query(Couple).filter(Couple.code == candidate).first()
+        if not exists:
+            code = candidate
+            break
+    if not code:
+        code = secrets.token_hex(6)
+
     couple = Couple(code=code)
     db.add(couple)
     db.commit()
@@ -229,10 +230,18 @@ def pair_join(
     db: Session = Depends(get_db),
 ):
     u = current_user(request, db)
-    couple = db.query(Couple).filter(Couple.code == code.strip()).first()
+    if not u:
+        return redirect_to("/login")
+    if u.couple_id:
+        return redirect_to("/")
 
-    if not u or not couple:
-        return redirect_to("/pair")
+    couple = db.query(Couple).filter(Couple.code == (code or "").strip()).first()
+    if not couple:
+        return templates.TemplateResponse(
+            "pair.html",
+            {"request": request, "user": u, "couple": None, "error": "Código inválido."},
+            status_code=400,
+        )
 
     u.couple_id = couple.id
     db.commit()
@@ -244,8 +253,10 @@ def pair_join(
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request, db: Session = Depends(get_db)):
     u = current_user(request, db)
-    if not u or not u.couple_id:
+    if not u:
         return redirect_to("/login")
+    if not u.couple_id:
+        return redirect_to("/pair")
 
     roles = get_roles(db, u.couple_id, u.id)
 
@@ -258,20 +269,35 @@ def home(request: Request, db: Session = Depends(get_db)):
 
     by_day = {}
     for e in entries:
-        d = by_day.setdefault(e.day, {"day": e.day, "me": {}, "par": {}})
+        d = by_day.setdefault(e.day, {"day": e.day, "me": None, "par": None, "created_at": ""})
         payload = {
-            "mood": e.mood,
-            "moment_special": e.moment_special,
-            "love_action": e.love_action,
-            "character": e.character,
-            "music": e.music,
-            "updated_at": e.updated_at,
-            "tags": split_tags(e.tags_csv),
+            "mood": e.mood or "",
+            "moment_special": e.moment_special or "",
+            "love_action": e.love_action or "",
+            "character": e.character or "",
+            "music": e.music or "",
+            "updated_at": e.updated_at or "",
+            "tags": split_tags(getattr(e, "tags_csv", "") or ""),
         }
+
         if e.author == roles["self_author"]:
             d["me"] = payload
-        else:
+        elif e.author == roles["partner_author"]:
             d["par"] = payload
+
+        d["created_at"] = d["created_at"] or (e.updated_at or "")
+
+    days_sorted = sorted(by_day.keys(), reverse=True)
+    rows = []
+    for k in days_sorted:
+        d = by_day[k]
+        d["me"] = d["me"] or {
+            "mood": "", "moment_special": "", "love_action": "", "character": "", "music": "", "updated_at": "", "tags": []
+        }
+        d["par"] = d["par"] or {
+            "mood": "", "moment_special": "", "love_action": "", "character": "", "music": "", "updated_at": "", "tags": []
+        }
+        rows.append(d)
 
     return templates.TemplateResponse(
         "index.html",
@@ -279,7 +305,7 @@ def home(request: Request, db: Session = Depends(get_db)):
             "request": request,
             "user": u,
             "partner_name": roles["partner_name"],
-            "entries": list(by_day.values()),
+            "entries": rows,
             "diary_tags": DIARY_TAGS,
         },
     )
@@ -290,42 +316,51 @@ def home(request: Request, db: Session = Depends(get_db)):
 @app.post("/save_side")
 def save_side(
     request: Request,
-    side: str = Form(...),
+    side: str = Form(...),  # self ou partner
     mood: str = Form(""),
     moment_special: str = Form(""),
     love_action: str = Form(""),
     character: str = Form(""),
     music: str = Form(""),
-    tags: list[str] = Form([]),
+    tags: list[str] = Form(default=[]),
+    day: str = Form(""),  # opcional: permitir salvar outro dia
     db: Session = Depends(get_db),
 ):
     u = current_user(request, db)
-    roles = get_roles(db, u.couple_id, u.id)
+    if not u:
+        return redirect_to("/login")
+    if not u.couple_id:
+        return redirect_to("/pair")
 
+    roles = get_roles(db, u.couple_id, u.id)
     author = roles["self_author"] if side == "self" else roles["partner_author"]
 
-    today = date.today().isoformat()
+    if not day:
+        day = date.today().isoformat()
 
     entry = (
         db.query(Entry)
-        .filter(Entry.couple_id == u.couple_id, Entry.day == today, Entry.author == author)
+        .filter(Entry.couple_id == u.couple_id, Entry.day == day, Entry.author == author)
         .first()
     )
 
     if not entry:
-        entry = Entry(couple_id=u.couple_id, day=today, author=author)
+        entry = Entry(couple_id=u.couple_id, day=day, author=author)
         db.add(entry)
 
-    entry.mood = mood
-    entry.moment_special = moment_special
-    entry.love_action = love_action
-    entry.character = character
-    entry.music = music
-    entry.tags_csv = join_tags(tags)
+    entry.mood = (mood or "").strip()
+    entry.moment_special = (moment_special or "").strip()
+    entry.love_action = (love_action or "").strip()
+    entry.character = (character or "").strip()
+    entry.music = (music or "").strip()
     entry.updated_at = datetime.now().strftime("%d/%m/%Y")
 
-    db.commit()
+    # só salva tags válidas
+    clean_tags = [t for t in (tags or []) if t in DIARY_TAGS]
+    if hasattr(entry, "tags_csv"):
+        entry.tags_csv = join_tags(clean_tags)
 
+    db.commit()
     return redirect_to("/")
 
 # =====================================================
@@ -334,6 +369,11 @@ def save_side(
 @app.get("/puxa-papo", response_class=HTMLResponse)
 def puxa_papo_page(request: Request, db: Session = Depends(get_db)):
     u = current_user(request, db)
+    if not u:
+        return redirect_to("/login")
+    if not u.couple_id:
+        return redirect_to("/pair")
+
     roles = get_roles(db, u.couple_id, u.id)
 
     return templates.TemplateResponse(
@@ -342,137 +382,24 @@ def puxa_papo_page(request: Request, db: Session = Depends(get_db)):
             "request": request,
             "user": u,
             "partner_name": roles["partner_name"],
-            "modes": [(k, k.title()) for k in QUESTION_SETS.keys()],
+            "modes": [
+                ("divertidas", "😄 Divertidas"),
+                ("romanticas", "💖 Românticas"),
+                ("picantes_leves", "😏 Picantes (leve)"),
+            ],
             "last": request.session.get("puxa_papo_last"),
         },
     )
 
 @app.post("/puxa-papo/next")
 def puxa_papo_next(request: Request, mode: str = Form("divertidas")):
-    q = random.choice(QUESTION_SETS.get(mode, QUESTION_SETS["divertidas"]))
+    if mode not in QUESTION_SETS:
+        mode = "divertidas"
+
+    q = random.choice(QUESTION_SETS[mode])
     request.session["puxa_papo_last"] = {
         "mode": mode,
         "question": q,
         "at": datetime.now().strftime("%d/%m/%Y"),
     }
     return redirect_to("/puxa-papo")
-    # =====================================================
-# Datas especiais
-# =====================================================
-@app.get("/special-dates", response_class=HTMLResponse)
-def special_dates_page(request: Request, db: Session = Depends(get_db)):
-    u = current_user(request, db)
-    if not u or not u.couple_id:
-        return redirect_to("/login")
-
-    roles = get_roles(db, u.couple_id, u.id)
-
-    dates = (
-        db.query(SpecialDate)
-        .filter(SpecialDate.couple_id == u.couple_id)
-        .order_by(SpecialDate.date.asc())
-        .all()
-    )
-
-    return templates.TemplateResponse(
-        "special_dates.html",
-        {
-            "request": request,
-            "user": u,
-            "partner_name": roles["partner_name"],
-            "types": SPECIAL_DATE_TYPES,
-            "dates": dates,
-        },
-    )
-
-
-@app.post("/special-dates/add")
-def special_dates_add(
-    request: Request,
-    type: str = Form(...),
-    date_str: str = Form(..., alias="date"),
-    note: str = Form(""),
-    db: Session = Depends(get_db),
-):
-    u = current_user(request, db)
-    if not u or not u.couple_id:
-        return redirect_to("/login")
-
-    t = next((x for x in SPECIAL_DATE_TYPES if x["key"] == type), None)
-    if not t:
-        return redirect_to("/special-dates")
-
-    db.add(
-        SpecialDate(
-            couple_id=u.couple_id,
-            type=t["key"],
-            label=t["label"],
-            date=date_str,
-            note=note.strip(),
-        )
-    )
-    db.commit()
-
-    return redirect_to("/special-dates")
-
-
-@app.post("/special-dates/delete")
-def special_dates_delete(
-    request: Request,
-    id: int = Form(...),
-    db: Session = Depends(get_db),
-):
-    u = current_user(request, db)
-    item = db.get(SpecialDate, id)
-
-    if item and item.couple_id == u.couple_id:
-        db.delete(item)
-        db.commit()
-
-    return redirect_to("/special-dates")
-
-
-# =====================================================
-# Notificações
-# =====================================================
-@app.get("/notifications", response_class=HTMLResponse)
-def notifications_page(request: Request, db: Session = Depends(get_db)):
-    u = current_user(request, db)
-    if not u or not u.couple_id:
-        return redirect_to("/login")
-
-    roles = get_roles(db, u.couple_id, u.id)
-
-    items = (
-        db.query(Notification)
-        .filter(Notification.couple_id == u.couple_id)
-        .order_by(Notification.id.desc())
-        .all()
-    )
-
-    return templates.TemplateResponse(
-        "notifications.html",
-        {
-            "request": request,
-            "user": u,
-            "partner_name": roles["partner_name"],
-            "items": items,
-        },
-    )
-
-
-@app.post("/notifications/read")
-def notifications_read(
-    request: Request,
-    id: int = Form(...),
-    db: Session = Depends(get_db),
-):
-    u = current_user(request, db)
-    n = db.get(Notification, id)
-
-    if n and n.couple_id == u.couple_id:
-        n.is_read = 1
-        db.commit()
-
-    return redirect_to("/notifications")
-
