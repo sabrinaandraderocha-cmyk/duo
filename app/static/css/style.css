@@ -1,27 +1,26 @@
-
 :root {
   /* Base */
-  --bg: #f3f6f9; /* Um cinza levemente azulado para modernidade */
+  --bg: #f3f6f9; /* Cinza moderno */
   --card: #ffffff;
   --border: #e2e8f0;
   
-  /* Sombras (Novo) */
+  /* Sombras */
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   --shadow-hover: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
 
   /* Texto */
   --text: #1f2937;
-  --muted: #64748b; /* Slate-500, mais elegante que cinza puro */
+  --muted: #64748b;
 
-  /* Azul (Identidade - Levemente ajustado para ser mais "Tech/Cozy") */
-  --accent: #1e40af; /* Azul forte */
-  --accent-light: #eff6ff; /* Fundo azul bem clarinho */
+  /* Azul (Identidade) */
+  --accent: #1e40af;
+  --accent-light: #eff6ff;
 
   /* Laranja (Ação) */
   --primary: #f97316;
   --primary-hover: #ea580c;
-  --primary-soft: #fff7ed; /* Laranja muito suave para fundos */
+  --primary-soft: #fff7ed;
   --primary-ring: rgba(249, 115, 22, 0.25);
 
   --chip: #f3f4f6;
@@ -35,7 +34,7 @@
 
 body {
   margin: 0;
-  font-family: 'Inter', system-ui, -apple-system, sans-serif; /* Inter é ótimo se puder importar, senão system-ui resolve */
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
   background: var(--bg);
   color: var(--text);
   line-height: 1.6;
@@ -76,30 +75,18 @@ a { color: inherit; text-decoration: none; transition: color 0.2s; }
   margin-top: 16px;
   display: flex;
   align-items: center;
-  justify-content: space-between; /* Espalha melhor os itens */
+  justify-content: space-between;
   gap: 14px;
   flex-wrap: wrap;
 }
 
 /* =========================
-   LAYOUT
+   LAYOUT GERAL
    ========================= */
 .wrap {
-  max-width: 1024px; /* Levemente mais largo */
+  max-width: 1024px;
   margin: 32px auto;
   padding: 0 24px 64px;
-}
-
-/* =========================
-   CARD (O Container Principal)
-   ========================= */
-.card {
-  background: var(--card);
-  border: 1px solid transparent; /* Remove borda dura */
-  border-radius: 20px; /* Mais arredondado = mais amigável */
-  padding: 24px;
-  box-shadow: var(--shadow-md);
-  margin-bottom: 24px;
 }
 
 .card-title h2 {
@@ -116,64 +103,23 @@ a { color: inherit; text-decoration: none; transition: color 0.2s; }
 }
 
 /* =========================
-   GRID (Lado a Lado)
+   INPUTS GERAIS (Estilo Clean)
    ========================= */
-.two-col {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 24px;
-  margin-top: 24px;
-}
-
-@media (max-width: 820px) {
-  .two-col { grid-template-columns: 1fr; }
-}
-
-/* =========================
-   FORMULÁRIOS
-   ========================= */
-.side {
-  /* Área de cada pessoa */
-  background: #ffffff;
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 20px;
-  transition: all 0.2s ease;
-}
-
-/* Efeito sutil ao passar o mouse na área de um dos parceiros */
-.side:hover {
-  border-color: #cbd5e1;
-  box-shadow: var(--shadow-sm);
-}
-
-.side h3 {
-  margin: 0 0 16px;
-  color: var(--accent);
-  font-size: 18px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
 label {
   display: block;
   font-weight: 600;
   margin-top: 16px;
   margin-bottom: 8px;
-  font-size: 13px;
+  font-size: 14px;
   color: #374151;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
 }
 
 input, textarea, select {
   width: 100%;
   padding: 12px 16px;
-  border: 1px solid var(--border);
+  border: 1px solid #d1d5db; 
+  background: #ffffff; 
   border-radius: 12px;
-  background: #f9fafb; /* Fundo levemente cinza no input ajuda no contraste */
   font-size: 15px;
   color: var(--text);
   transition: all 0.2s ease;
@@ -186,61 +132,14 @@ textarea {
   line-height: 1.5;
 }
 
-/* Foco Laranja (Identidade) */
+/* Foco Laranja Suave */
 input:focus, textarea:focus, select:focus {
   outline: none;
-  background: #fff;
   border-color: var(--primary);
-  box-shadow: 0 0 0 4px var(--primary-ring);
+  box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.15); 
 }
 
-::placeholder {
-  color: #9ca3af;
-}
-
-/* =========================
-   TAGS / CHIPS (Pílulas)
-   ========================= */
-.tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 10px;
-}
-
-.tag {
-  cursor: pointer;
-  user-select: none;
-}
-
-.tag input { display: none; }
-
-.tag span {
-  display: inline-block;
-  background: #fff;
-  border: 1px solid var(--chip-border);
-  padding: 8px 16px;
-  border-radius: 50px;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--muted);
-  transition: all 0.2s ease;
-}
-
-.tag span:hover {
-  background: var(--accent-light);
-  color: var(--accent);
-  border-color: #dbeafe;
-}
-
-/* Estado Selecionado */
-.tag input:checked + span {
-  background: var(--primary);
-  border-color: var(--primary);
-  color: #fff;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(249, 115, 22, 0.3);
-}
+::placeholder { color: #9ca3af; }
 
 /* =========================
    BOTÕES
@@ -259,11 +158,8 @@ input:focus, textarea:focus, select:focus {
   letter-spacing: 0.02em;
 }
 
-.btn:active {
-  transform: scale(0.98);
-}
+.btn:active { transform: scale(0.98); }
 
-/* Botão Principal (Salvar) */
 .btn.primary {
   background: var(--primary);
   color: #fff;
@@ -276,7 +172,6 @@ input:focus, textarea:focus, select:focus {
   transform: translateY(-1px);
 }
 
-/* Botão Secundário (Ações menores) */
 .btn.secondary {
   background: #fff;
   color: var(--accent);
@@ -295,140 +190,315 @@ input:focus, textarea:focus, select:focus {
 }
 
 /* =========================
-   TIMELINE / LEITURA
+   NOVO: CARDS DE DIÁRIO (Journal)
    ========================= */
-.entry {
-  background: #fff;
-  border-left: 4px solid var(--primary); /* Identidade visual na lateral */
+.journal-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-top: 20px;
+}
+
+@media (max-width: 768px) {
+  .journal-grid { grid-template-columns: 1fr; }
+}
+
+.journal-card {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: var(--shadow-md);
+  border: 1px solid #f0f2f5;
+  transition: transform 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Faixa colorida no topo */
+.journal-card::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 6px;
+  background: linear-gradient(90deg, var(--accent) 0%, var(--accent2) 100%);
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.avatar {
+  width: 42px;
+  height: 42px;
+  background: var(--accent-light);
+  color: var(--accent);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 18px;
+}
+
+.user-name {
+  font-weight: 700;
+  font-size: 18px;
+  color: var(--text);
+}
+
+.input-group {
+  margin-bottom: 18px;
+  position: relative;
+}
+
+.input-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 0; /* Override */
+}
+
+/* Tags de Humor (Pílulas) */
+.mood-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.mood-grid input { display: none; }
+
+.mood-tag {
+  cursor: pointer;
+  padding: 8px 14px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
   border-radius: 12px;
-  padding: 20px;
-  margin-bottom: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mood-tag:hover {
+  background: #f1f5f9;
+  transform: translateY(-1px);
+}
+
+.mood-grid input:checked + .mood-tag {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+  box-shadow: 0 4px 10px rgba(249, 115, 22, 0.3);
+}
+
+.save-area {
+  margin-top: 24px;
+  border-top: 1px solid #f1f5f9;
+  padding-top: 20px;
+}
+
+.read-only-box {
+  background: #f8fafc;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  color: var(--text);
+}
+
+.read-text {
+  background: #f8fafc;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  white-space: pre-wrap;
+  color: var(--text);
+  margin: 0;
+}
+
+/* =========================
+   EXTRAS (Barra Sinergia & Empty State)
+   ========================= */
+.synergy-bar-container {
+  margin-bottom: 24px;
+  background: #fff;
+  padding: 16px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
   box-shadow: var(--shadow-sm);
 }
+.synergy-label {
+  font-size: 14px;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+.synergy-track {
+  height: 8px;
+  background: var(--bg);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.synergy-fill {
+  height: 100%;
+  background: var(--primary);
+  transition: width 0.5s ease;
+}
 
-.entry-head {
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  background: #fff;
+  border-radius: 16px;
+  border: 2px dashed #cbd5e1;
+  color: var(--muted);
+}
+.empty-icon { font-size: 40px; margin-bottom: 10px; }
+.empty-state h3 { margin: 0 0 8px; color: var(--text); font-size: 18px; }
+
+/* =========================
+   PUXA-PAPO (GAME MODE)
+   ========================= */
+.game-container {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.question-card {
+  background: #ffffff;
+  border-radius: 24px;
+  padding: 40px 30px;
+  text-align: center;
+  border: 1px solid #e2e8f0;
+  box-shadow: var(--shadow-hover);
+  position: relative;
+  overflow: hidden;
+  min-height: 300px;
   display: flex;
-  justify-content: space-between;
-  margin-bottom: 12px;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.question-card::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 8px;
+  background: linear-gradient(90deg, var(--accent) 0%, var(--primary) 100%);
+}
+
+.question-text {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1.4;
+  margin-bottom: 20px;
+}
+
+.question-meta {
   font-size: 13px;
   color: var(--muted);
-  font-weight: 500;
-}
-
-.block {
-  margin-top: 12px;
-  padding: 12px 16px;
-  border-radius: 10px;
-  background: var(--accent-light); /* Azul bem suave */
-  border: 1px solid #dbeafe;
-}
-
-.block-title {
-  color: var(--accent);
-  font-size: 12px;
   text-transform: uppercase;
-  font-weight: 800;
-  margin-bottom: 4px;
+  letter-spacing: 1px;
+  margin-bottom: 10px;
+  font-weight: 600;
+}
+
+.game-controls {
+  background: #fff;
+  padding: 16px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.quote-icon {
+  font-size: 60px;
+  line-height: 1;
+  color: var(--accent-light);
+  margin-bottom: 10px;
 }
 
 /* =========================
-   EXTRAS / MICRO-ANIMAÇÕES
+   TELA DE LOGIN (Auth Clean)
    ========================= */
-/* Animação suave de entrada */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.card, .entry {
-  animation: fadeIn 0.4s ease-out;
-}
-/* =========================
-   TELA DE LOGIN (AUTH)
-   ========================= */
-
-/* Centraliza tudo na tela */
 .auth-body {
   min-height: 100vh;
-  display: grid;
-  place-items: center;
-  background: linear-gradient(135deg, var(--bg) 0%, #eef2ff 100%); /* Gradiente sutil */
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f3f4f6; 
   padding: 20px;
 }
 
 .auth-wrap {
   width: 100%;
-  max-width: 400px; /* Largura ideal para leitura */
+  max-width: 400px;
 }
 
 .auth-card {
   background: #ffffff;
-  padding: 40px 32px; /* Mais espaço interno */
-  border-radius: 24px;
-  box-shadow: 
-    0 4px 6px -1px rgba(0, 0, 0, 0.05), 
-    0 20px 25px -5px rgba(0, 0, 0, 0.05); /* Sombra suave e profunda */
+  padding: 40px 32px;
+  border-radius: 20px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
   text-align: center;
+  border: 1px solid #f3f4f6;
 }
 
-/* Cabeçalho do Card */
 .auth-logo {
-  font-size: 36px;
-  margin: 0 0 12px;
+  font-size: 32px;
+  margin: 0 0 8px;
   color: var(--accent);
-  letter-spacing: -1px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
 }
 
 .auth-subtitle {
   color: var(--muted);
   font-size: 15px;
   line-height: 1.5;
-  margin: 0 0 32px;
+  margin: 0 auto 32px;
+  max-width: 280px;
 }
 
-/* Ajustes do Formulário */
 .auth-field {
   text-align: left;
   margin-bottom: 20px;
 }
 
-.auth-field label {
-  color: var(--text);
-  font-size: 14px;
-  margin-bottom: 8px;
-  margin-top: 0; /* Remove margem padrão */
-}
-
-/* Botão Full Width */
 .auth-btn {
   width: 100%;
+  margin-top: 12px;
   padding: 14px;
   font-size: 16px;
-  margin-top: 10px;
   display: flex;
   justify-content: center;
 }
 
-/* Rodapé do Card */
 .auth-footer {
   margin-top: 24px;
   font-size: 14px;
   color: var(--muted);
 }
 
-.link-highlight {
-  color: var(--primary);
-  font-weight: 700;
-  margin-left: 4px;
-  transition: color 0.2s;
-}
-
-.link-highlight:hover {
-  color: var(--primary-hover);
-  text-decoration: underline;
-}
-
-/* Alerta de Erro */
 .auth-alert {
   background: #fef2f2;
   border: 1px solid #fee2e2;
@@ -442,4 +512,41 @@ input:focus, textarea:focus, select:focus {
   align-items: center;
   justify-content: center;
   gap: 8px;
+}
+
+.code-box {
+  background: #f8fafc;
+  border: 2px dashed #cbd5e1;
+  padding: 16px;
+  border-radius: 12px;
+  font-family: monospace;
+  font-size: 24px;
+  letter-spacing: 4px;
+  color: var(--text);
+  font-weight: 700;
+  margin: 16px 0;
+  user-select: all;
+}
+
+.link-highlight {
+  color: var(--primary);
+  font-weight: 700;
+  margin-left: 4px;
+  transition: color 0.2s;
+}
+.link-highlight:hover {
+  color: var(--primary-hover);
+  text-decoration: underline;
+}
+
+/* =========================
+   ANIMAÇÕES GERAIS
+   ========================= */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.journal-card, .entry, .auth-card, .question-card {
+  animation: fadeIn 0.4s ease-out;
 }
