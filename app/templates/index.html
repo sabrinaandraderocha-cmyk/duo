@@ -11,33 +11,29 @@
     </h2>
     
     {% if has_today %}
-      {% set filled_count = 0 %}
-      {% if timeline[0].me.filled %}{% set filled_count = filled_count + 1 %}{% endif %}
-      {% if timeline[0].par.filled %}{% set filled_count = filled_count + 1 %}{% endif %}
-      
       <div class="synergy-bar-container">
         <div class="synergy-label">
-          Sinergia do dia: <strong>{{ (filled_count / 2 * 100) | int }}%</strong>
-          {% if filled_count == 2 %}🎉{% endif %}
+          Sinergia do dia: <strong>{{ synergy_percent }}%</strong>
+          {% if synergy_percent == 100 %}🎉{% endif %}
         </div>
         <div class="synergy-track">
-          <div class="synergy-fill" style="width: {{ (filled_count / 2 * 100) }}%;"></div>
+          <div class="synergy-fill" style="width: {{ synergy_percent }}%;"></div>
         </div>
       </div>
     {% endif %}
   </div>
 
   <div class="card-title" style="margin-bottom: 20px;">
-    <h2>Registro do Momento ✍️</h2>
-    <p class="muted">Como vocês viveram o dia de hoje?</p>
+    <h2>Novo Registro ✍️</h2>
+    <p class="muted">Adicione um novo momento ao seu dia.</p>
   </div>
 
   <div class="journal-grid">
 
-    <div class="journal-card">
+    <div class="journal-card card-me">
       <div class="card-header">
-        <div class="avatar">{{ user.name[0] | upper }}</div>
-        <div class="user-name">Minha Parte</div>
+        <div class="avatar avatar-me">{{ user.name[0] | upper }}</div>
+        <div class="user-name">{{ user.name }}</div>
       </div>
 
       <form action="/save_side" method="post">
@@ -45,31 +41,27 @@
         
         <div class="input-group">
           <label class="input-label">✨ Como estou hoje</label>
-          <input 
-            type="text" 
-            name="mood" 
-            placeholder="{{ ph_humor }}" 
-            value="{{ timeline[0].me.mood if has_today else '' }}"
-            autocomplete="off"
-          >
+          <input type="text" name="mood" placeholder="{{ ph_humor }}" autocomplete="off">
         </div>
 
         <div class="input-group">
           <label class="input-label">❤️ Momento Especial</label>
-          <textarea 
-            name="moment_special" 
-            placeholder="{{ ph_momento }}"
-          >{{ timeline[0].me.moment_special if has_today else '' }}</textarea>
+          <textarea name="moment_special" placeholder="{{ ph_momento }}"></textarea>
+        </div>
+
+        <div class="input-group">
+          <label class="input-label">🎭 Personagem do dia</label>
+          <input type="text" name="character" placeholder="Ex: Amélie, Ted Lasso...">
+        </div>
+
+        <div class="input-group">
+          <label class="input-label">🎵 Música do dia</label>
+          <input type="text" name="music" placeholder="Artista — Música">
         </div>
 
         <div class="input-group">
           <label class="input-label">🎁 Gesto de amor do par</label>
-          <input 
-            type="text" 
-            name="love_action" 
-            placeholder="O que ele(a) fez que você amou?" 
-            value="{{ timeline[0].me.love_action if has_today else '' }}"
-          >
+          <input type="text" name="love_action" placeholder="O que ele(a) fez que você amou?">
         </div>
 
         <div class="input-group">
@@ -77,8 +69,7 @@
           <div class="mood-grid">
             {% for key, label in diary_tags.items() %}
             <label>
-              <input type="checkbox" name="tags" value="{{ key }}" 
-                {% if has_today and key in timeline[0].me.tags %}checked{% endif %}>
+              <input type="checkbox" name="tags" value="{{ key }}">
               <span class="mood-tag">{{ label }}</span>
             </label>
             {% endfor %}
@@ -87,47 +78,100 @@
         
         <div class="save-area">
           <button type="submit" class="btn primary" style="width: 100%">
-            Salvar meu dia
+            Salvar novo registro
           </button>
         </div>
       </form>
     </div>
 
-    <div class="journal-card" style="background: #f8fafc; border-style: dashed;">
+    <div class="journal-card card-par">
       <div class="card-header">
-        <div class="avatar" style="background: #e2e8f0; color: #64748b;">
+        <div class="avatar avatar-par">
           {{ partner_name[0] | upper if partner_name else '?' }}
         </div>
         <div class="user-name">{{ partner_name or 'Seu Par' }}</div>
       </div>
 
-      {% if has_today and timeline[0].par.filled %}
-        <div class="input-group">
-          <label class="input-label">✨ Como está hoje</label>
-          <div class="read-only-box">{{ timeline[0].par.mood }}</div>
-        </div>
-        <div class="input-group">
-          <label class="input-label">❤️ Momento Especial</label>
-          <p class="read-text">{{ timeline[0].par.moment_special }}</p>
-        </div>
-        
-        {% if timeline[0].par.tags %}
-         <div class="mood-grid">
-           {% for t in timeline[0].par.tags %}
-             <span class="mood-tag" style="background: #fff; cursor: default;">
-               {{ diary_tags.get(t, t) }}
-             </span>
-           {% endfor %}
-         </div>
-        {% endif %}
-
-      {% else %}
-        <div style="text-align: center; padding: 40px 0; color: var(--muted);">
-          <div style="font-size: 40px; margin-bottom: 10px;">⏳</div>
-          <p>Aguardando {{ partner_name }} escrever...</p>
-        </div>
-      {% endif %}
+      <div class="waiting-state">
+        <div style="font-size: 40px; margin-bottom: 10px;">👋</div>
+        <p>A parte dele(a) aparece na Linha do Tempo abaixo.</p>
+      </div>
     </div>
 
-  </div> </div>
+  </div>
+
+  <div class="timeline" style="margin-top: 60px;">
+    <h2>Linha do Tempo 📅</h2>
+
+    {% if not timeline %}
+      <div class="empty-state">
+        <div class="empty-icon">📝</div>
+        <h3>O diário está começando...</h3>
+        <p>Preencha os dados acima para iniciar a história de vocês.</p>
+      </div>
+    {% else %}
+      
+      {% for day_data in timeline %}
+        <div class="entry">
+          <div class="entry-head">
+            <strong>🗓️ {{ day_data.display_date }}</strong>
+            <span>Registros</span>
+          </div>
+
+          {% for me_entry, par_entry in day_data.rows %}
+            <div class="journal-grid" style="margin-top: 0; gap: 24px; margin-bottom: 24px;">
+              
+              <div style="flex:1">
+                {% if me_entry %}
+                  <div class="journal-card card-me" style="padding: 16px; min-height: 100%;">
+                    <div style="font-size: 13px; color: var(--muted); margin-bottom: 8px;">
+                      {{ user.name }} escreveu:
+                    </div>
+                    <div class="read-text" style="background: var(--accent-light); border:none;">
+                      {{ me_entry.moment_special }}
+                    </div>
+                    {% if me_entry.mood %}
+                      <div style="margin-top:8px; font-size:13px; color:var(--muted)">✨ {{ me_entry.mood }}</div>
+                    {% endif %}
+                    {% if me_entry.character %}
+                      <div style="margin-top:4px; font-size:13px; color:var(--muted)">🎭 {{ me_entry.character }}</div>
+                    {% endif %}
+                    {% if me_entry.music %}
+                      <div style="margin-top:4px; font-size:13px; color:var(--muted)">🎵 {{ me_entry.music }}</div>
+                    {% endif %}
+                  </div>
+                {% endif %}
+              </div>
+
+              <div style="flex:1">
+                {% if par_entry %}
+                  <div class="journal-card card-par" style="padding: 16px; min-height: 100%;">
+                    <div style="font-size: 13px; color: var(--muted); margin-bottom: 8px;">
+                      {{ partner_name }} escreveu:
+                    </div>
+                    <div class="read-text" style="background: #fff; border: 1px solid var(--border);">
+                      {{ par_entry.moment_special }}
+                    </div>
+                    {% if par_entry.mood %}
+                      <div style="margin-top:8px; font-size:13px; color:var(--muted)">✨ {{ par_entry.mood }}</div>
+                    {% endif %}
+                    {% if par_entry.character %}
+                      <div style="margin-top:4px; font-size:13px; color:var(--muted)">🎭 {{ par_entry.character }}</div>
+                    {% endif %}
+                    {% if par_entry.music %}
+                      <div style="margin-top:4px; font-size:13px; color:var(--muted)">🎵 {{ par_entry.music }}</div>
+                    {% endif %}
+                  </div>
+                {% endif %}
+              </div>
+
+            </div>
+          {% endfor %}
+        </div>
+      {% endfor %}
+
+    {% endif %}
+  </div>
+
+</div>
 {% endblock %}
