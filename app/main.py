@@ -92,8 +92,23 @@ def get_couple_roles(db: Session, couple_id: int, my_user_id: int):
     first, second = users[0], users[1]
     if my_user_id == first.id: return {"self_role": "me", "partner_role": "par", "partner_name": second.name}
     return {"self_role": "par", "partner_role": "me", "partner_name": first.name}
-def split_tags(csv: str): return [t for t in (csv or "").split(",") if t.strip()]
+def split_tags(csv: str): return [t.strip() for t in (csv or "").split(",") if t.strip()]
 def join_tags(tags: list[str]): return ",".join(list(dict.fromkeys([t.strip() for t in (tags or []) if t.strip()])))
+
+def get_own_entry(db: Session, user: User, entry_id: int):
+    """Retorna apenas um registro que pertença ao casal e tenha sido criado pelo usuário logado."""
+    if not user or not user.couple_id:
+        return None
+
+    entry = db.get(Entry, entry_id)
+    if not entry or entry.couple_id != user.couple_id:
+        return None
+
+    roles = get_couple_roles(db, user.couple_id, user.id)
+    if entry.author != roles["self_role"]:
+        return None
+
+    return entry
 
 # =====================================================
 # ROTAS GERAIS
@@ -195,10 +210,11 @@ def home(request: Request, db: Session = Depends(get_db)):
         if e.day not in by_day:
             by_day[e.day] = {"day": e.day, "display_date": datetime.strptime(e.day, "%Y-%m-%d").strftime("%d/%m") if "-" in e.day else e.day, "me_entries": [], "par_entries": []}
         data = {
-            "id": e.id, # Importante para deletar
-            "mood": e.mood, "moment_special": e.moment_special, "love_action": e.love_action, 
+            "id": e.id,
+            "mood": e.mood, "moment_special": e.moment_special, "love_action": e.love_action,
             "character": e.character, "music": e.music, "tags": split_tags(e.tags_csv),
-            "time": e.updated_at.split(" ")[1] if e.updated_at and " " in e.updated_at else ""
+            "time": e.updated_at.split(" ")[1] if e.updated_at and " " in e.updated_at else "",
+            "can_edit": e.author == roles["self_role"]
         }
         if e.author == roles["self_role"]: by_day[e.day]["me_entries"].append(data)
         elif e.author == roles["partner_role"]: by_day[e.day]["par_entries"].append(data)
@@ -224,28 +240,86 @@ def home(request: Request, db: Session = Depends(get_db)):
     })
 
 @app.post("/save_side")
-def save_side(request: Request, side: str = Form(...), mood: str = Form(""), moment_special: str = Form(""), love_action: str = Form(""), character: str = Form(""), music: str = Form(""), tags: list[str] = Form(default=[]), db: Session = Depends(get_db)):
+def save_side(request: Request, side: str = Form("self"), mood: str = Form(""), moment_special: str = Form(""), love_action: str = Form(""), character: str = Form(""), music: str = Form(""), tags: list[str] = Form(default=[]), db: Session = Depends(get_db)):
     u = current_user(request, db)
     if not u or not u.couple_id: return redirect_to("/")
+
+    # O autor sempre é definido pelo usuário logado.
+    # Não confiamos no valor enviado pelo formulário para evitar registros em nome do par.
     roles = get_couple_roles(db, u.couple_id, u.id)
-    entry = Entry(couple_id=u.couple_id, day=date.today().isoformat(), author=roles["self_role"] if side == "self" else roles["partner_role"])
-    entry.mood = mood; entry.moment_special = moment_special; entry.love_action = love_action
-    entry.character = character; entry.music = music; entry.updated_at = datetime.now().strftime("%d/%m %H:%M")
+    entry = Entry(couple_id=u.couple_id, day=date.today().isoformat(), author=roles["self_role"])
+    entry.mood = (mood or "").strip()
+    entry.moment_special = (moment_special or "").strip()
+    entry.love_action = (love_action or "").strip()
+    entry.character = (character or "").strip()
+    entry.music = (music or "").strip()
+    entry.updated_at = datetime.now().strftime("%d/%m %H:%M")
     entry.tags_csv = join_tags([t for t in tags if t in DIARY_TAGS])
-    db.add(entry); db.commit()
+    db.add(entry)
+    db.commit()
     return redirect_to("/")
+
+@app.get("/entry/{entry_id}/edit", response_class=HTMLResponse)
+def edit_entry_page(entry_id: int, request: Request, db: Session = Depends(get_db)):
+    u = current_user(request, db)
+    if not u:
+        return redirect_to("/login")
+
+    entry = get_own_entry(db, u, entry_id)
+    if not entry:
+        return redirect_to("/")
+
+    return templates.TemplateResponse("edit_entry.html", {
+        "request": request,
+        "user": u,
+        "entry": entry,
+        "entry_tags": split_tags(entry.tags_csv),
+        "diary_tags": DIARY_TAGS,
+    })
+
+@app.post("/entry/{entry_id}/edit")
+def update_entry(
+    entry_id: int,
+    request: Request,
+    mood: str = Form(""),
+    moment_special: str = Form(""),
+    love_action: str = Form(""),
+    character: str = Form(""),
+    music: str = Form(""),
+    tags: list[str] = Form(default=[]),
+    db: Session = Depends(get_db),
+):
+    u = current_user(request, db)
+    if not u:
+        return redirect_to("/login")
+
+    entry = get_own_entry(db, u, entry_id)
+    if not entry:
+        return redirect_to("/")
+
+    entry.mood = (mood or "").strip()
+    entry.moment_special = (moment_special or "").strip()
+    entry.love_action = (love_action or "").strip()
+    entry.character = (character or "").strip()
+    entry.music = (music or "").strip()
+    entry.tags_csv = join_tags([t for t in tags if t in DIARY_TAGS])
+    entry.updated_at = datetime.now().strftime("%d/%m %H:%M")
+
+    db.commit()
+    return redirect_to(f"/?edited=1#entry-{entry.id}")
 
 @app.post("/delete_entry/{entry_id}")
 def delete_entry(entry_id: int, request: Request, db: Session = Depends(get_db)):
     u = current_user(request, db)
-    if not u: return redirect_to("/login")
-    
-    # Só pode deletar se for do próprio casal
-    entry = db.get(Entry, entry_id)
-    if entry and entry.couple_id == u.couple_id:
+    if not u:
+        return redirect_to("/login")
+
+    # Cada pessoa só pode excluir os próprios registros.
+    entry = get_own_entry(db, u, entry_id)
+    if entry:
         db.delete(entry)
         db.commit()
-    
+
     return redirect_to("/")
 
 # =====================================================
