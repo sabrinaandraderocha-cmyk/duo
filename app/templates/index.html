@@ -5,6 +5,110 @@
 {% block content %}
 <div class="wrap">
 
+  <style>
+    .entry-card-actions {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .entry-card-actions form {
+      margin: 0;
+    }
+
+    .entry-action-btn {
+      display: inline-grid;
+      place-items: center;
+      width: 34px;
+      height: 34px;
+      padding: 0;
+      border: 1px solid transparent;
+      border-radius: 10px;
+      background: transparent;
+      cursor: pointer;
+      text-decoration: none;
+      font-size: 17px;
+      line-height: 1;
+      opacity: .72;
+      transition: transform .18s ease, opacity .18s ease, background .18s ease, border-color .18s ease;
+    }
+
+    .entry-action-btn:hover,
+    .entry-action-btn:focus-visible {
+      transform: translateY(-1px);
+      opacity: 1;
+      outline: none;
+    }
+
+    .entry-edit-btn:hover,
+    .entry-edit-btn:focus-visible {
+      border-color: #c9c6ff;
+      background: #efefff;
+    }
+
+    .entry-delete-btn:hover,
+    .entry-delete-btn:focus-visible {
+      border-color: #ffd0d0;
+      background: #fff0f0;
+    }
+
+    .entry-meta {
+      padding-right: 78px;
+    }
+
+    .entry-detail {
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+      overflow-wrap: anywhere;
+    }
+
+    .entry-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 10px;
+    }
+
+    .entry-tag {
+      display: inline-flex;
+      align-items: center;
+      min-height: 27px;
+      padding: 2px 9px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .78);
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .entry-empty-moment {
+      padding: 12px 14px;
+      border: 1px dashed var(--border);
+      border-radius: 14px;
+      color: var(--muted);
+      font-size: 12px;
+      font-style: italic;
+    }
+
+    @media (max-width: 640px) {
+      .entry-action-btn {
+        width: 38px;
+        height: 38px;
+      }
+
+      .entry-meta {
+        padding-right: 88px;
+      }
+    }
+  </style>
+
   <div style="margin-bottom: 30px;">
     <h2 style="font-size: 28px; margin-bottom: 8px; color: var(--text);">
       {{ saudacao }}, {{ user.name }}!
@@ -123,28 +227,66 @@
               
               <div style="flex:1">
                 {% if me_entry %}
-                  <div class="journal-card card-me" style="padding: 16px; min-height: 100%; position: relative;">
-                    
-                    <form action="/delete_entry/{{ me_entry.id }}" method="post" onsubmit="return confirm('Tem certeza que quer apagar este registro?');" style="position: absolute; top: 12px; right: 12px;">
-                      <button type="submit" style="background: none; border: none; cursor: pointer; font-size: 18px; opacity: 0.6; transition: 0.2s;" title="Apagar">🗑️</button>
-                    </form>
+                  <div
+                    id="entry-{{ me_entry.id }}"
+                    class="journal-card card-me"
+                    style="padding: 16px; min-height: 100%; position: relative;"
+                  >
+                    <div class="entry-card-actions">
+                      <a
+                        href="/entry/{{ me_entry.id }}/edit"
+                        class="entry-action-btn entry-edit-btn"
+                        title="Editar registro"
+                        aria-label="Editar registro"
+                      >✏️</a>
 
-                    <div style="font-size: 13px; color: var(--muted); margin-bottom: 8px; padding-right: 25px;">
+                      <form
+                        action="/delete_entry/{{ me_entry.id }}"
+                        method="post"
+                        onsubmit="return confirm('Tem certeza que deseja apagar este registro? Esta ação não poderá ser desfeita.');"
+                      >
+                        <button
+                          type="submit"
+                          class="entry-action-btn entry-delete-btn"
+                          title="Apagar registro"
+                          aria-label="Apagar registro"
+                        >🗑️</button>
+                      </form>
+                    </div>
+
+                    <div class="entry-meta" style="font-size: 13px; color: var(--muted); margin-bottom: 8px;">
                       {{ user.name }} • {{ me_entry.time }}
                     </div>
-                    
-                    <div class="read-text" style="background: var(--accent-light); border:none;">
-                      {{ me_entry.moment_special }}
-                    </div>
+
+                    {% if me_entry.moment_special %}
+                      <div class="read-text" style="background: var(--accent-light); border:none;">
+                        {{ me_entry.moment_special }}
+                      </div>
+                    {% else %}
+                      <div class="entry-empty-moment">Registro sem momento especial escrito.</div>
+                    {% endif %}
                     
                     {% if me_entry.mood %}
-                      <div style="margin-top:8px; font-size:13px; color:var(--muted)">✨ {{ me_entry.mood }}</div>
+                      <div class="entry-detail">✨ {{ me_entry.mood }}</div>
                     {% endif %}
                     {% if me_entry.character %}
-                      <div style="margin-top:4px; font-size:13px; color:var(--muted)">🎭 {{ me_entry.character }}</div>
+                      <div class="entry-detail">🎭 {{ me_entry.character }}</div>
                     {% endif %}
                     {% if me_entry.music %}
-                      <div style="margin-top:4px; font-size:13px; color:var(--muted)">🎵 {{ me_entry.music }}</div>
+                      <div class="entry-detail">🎵 {{ me_entry.music }}</div>
+                    {% endif %}
+                    {% if me_entry.love_action %}
+                      <div class="entry-detail">🎁 {{ me_entry.love_action }}</div>
+                    {% endif %}
+
+                    {% if me_entry.tags %}
+                      <div class="entry-tags">
+                        {% for tag in me_entry.tags %}
+                          <span class="entry-tag">
+                            {{ diary_tags[tag] if tag in diary_tags else tag }}
+                          </span>
+                        {% endfor %}
+                      </div>
                     {% endif %}
                   </div>
                 {% endif %}
@@ -156,19 +298,36 @@
                     <div style="font-size: 13px; color: var(--muted); margin-bottom: 8px;">
                       {{ partner_name }} • {{ par_entry.time }}
                     </div>
-                    
-                    <div class="read-text" style="background: #fff; border: 1px solid var(--border);">
-                      {{ par_entry.moment_special }}
-                    </div>
+
+                    {% if par_entry.moment_special %}
+                      <div class="read-text" style="background: #fff; border: 1px solid var(--border);">
+                        {{ par_entry.moment_special }}
+                      </div>
+                    {% else %}
+                      <div class="entry-empty-moment">Registro sem momento especial escrito.</div>
+                    {% endif %}
                     
                     {% if par_entry.mood %}
-                      <div style="margin-top:8px; font-size:13px; color:var(--muted)">✨ {{ par_entry.mood }}</div>
+                      <div class="entry-detail">✨ {{ par_entry.mood }}</div>
                     {% endif %}
                     {% if par_entry.character %}
-                      <div style="margin-top:4px; font-size:13px; color:var(--muted)">🎭 {{ par_entry.character }}</div>
+                      <div class="entry-detail">🎭 {{ par_entry.character }}</div>
                     {% endif %}
                     {% if par_entry.music %}
-                      <div style="margin-top:4px; font-size:13px; color:var(--muted)">🎵 {{ par_entry.music }}</div>
+                      <div class="entry-detail">🎵 {{ par_entry.music }}</div>
+                    {% endif %}
+                    {% if par_entry.love_action %}
+                      <div class="entry-detail">🎁 {{ par_entry.love_action }}</div>
+                    {% endif %}
+
+                    {% if par_entry.tags %}
+                      <div class="entry-tags">
+                        {% for tag in par_entry.tags %}
+                          <span class="entry-tag">
+                            {{ diary_tags[tag] if tag in diary_tags else tag }}
+                          </span>
+                        {% endfor %}
+                      </div>
                     {% endif %}
                   </div>
                 {% endif %}
