@@ -114,26 +114,26 @@ def get_own_entry(db: Session, user: User, entry_id: int):
 # ROTAS GERAIS
 # =====================================================
 @app.get("/login", response_class=HTMLResponse)
-def login_page(request: Request): return templates.TemplateResponse("login.html", {"request": request})
+def login_page(request: Request): return templates.TemplateResponse(request=request, name="login.html", context={"request": request})
 
 @app.post("/login")
 def login(request: Request, email: str = Form(...), password: str = Form(...), db: Session = Depends(get_db)):
     email_norm = (email or "").strip().lower()
     user = db.query(User).filter(User.email == email_norm).first()
     if not user or not verify_password(password, user.password_hash):
-        return templates.TemplateResponse("login.html", {"request": request, "error": "E-mail ou senha incorretos."}, status_code=400)
+        return templates.TemplateResponse(request=request, name="login.html", context={"request": request, "error": "E-mail ou senha incorretos."}, status_code=400)
     request.session["uid"] = user.id
     return redirect_to("/")
 
 @app.get("/signup", response_class=HTMLResponse)
-def signup_page(request: Request): return templates.TemplateResponse("signup.html", {"request": request})
+def signup_page(request: Request): return templates.TemplateResponse(request=request, name="signup.html", context={"request": request})
 
 @app.post("/signup")
 def signup(request: Request, name: str = Form(...), email: str = Form(...), password: str = Form(...), db: Session = Depends(get_db)):
     name_norm = (name or "").strip()
     email_norm = (email or "").strip().lower()
     if db.query(User).filter(User.email == email_norm).first():
-        return templates.TemplateResponse("signup.html", {"request": request, "error": "Este e-mail já tem conta."}, status_code=400)
+        return templates.TemplateResponse(request=request, name="signup.html", context={"request": request, "error": "Este e-mail já tem conta."}, status_code=400)
     user = User(name=name_norm, email=email_norm, password_hash=hash_password(password))
     db.add(user)
     db.commit()
@@ -151,7 +151,7 @@ def logout(request: Request): request.session.clear(); return redirect_to("/logi
 def profile_page(request: Request, db: Session = Depends(get_db)):
     u = current_user(request, db)
     if not u: return redirect_to("/login")
-    return templates.TemplateResponse("profile.html", {"request": request, "user": u})
+    return templates.TemplateResponse(request=request, name="profile.html", context={"request": request, "user": u})
 
 @app.post("/profile/update_password")
 def update_password(request: Request, new_password: str = Form(...), db: Session = Depends(get_db)):
@@ -159,11 +159,11 @@ def update_password(request: Request, new_password: str = Form(...), db: Session
     if not u: return redirect_to("/login")
     
     if len(new_password) < 4:
-        return templates.TemplateResponse("profile.html", {"request": request, "user": u, "error": "Senha muito curta!"})
+        return templates.TemplateResponse(request=request, name="profile.html", context={"request": request, "user": u, "error": "Senha muito curta!"})
         
     u.password_hash = hash_password(new_password)
     db.commit()
-    return templates.TemplateResponse("profile.html", {"request": request, "user": u, "success": "Senha alterada com sucesso!"})
+    return templates.TemplateResponse(request=request, name="profile.html", context={"request": request, "user": u, "success": "Senha alterada com sucesso!"})
 
 # =====================================================
 # PAREAMENTO
@@ -173,7 +173,7 @@ def pair_page(request: Request, db: Session = Depends(get_db)):
     u = current_user(request, db)
     if not u: return redirect_to("/login")
     roles = get_couple_roles(db, u.couple_id, u.id) if u.couple_id else {}
-    return templates.TemplateResponse("pair.html", {"request": request, "user": u, "couple": db.get(Couple, u.couple_id) if u.couple_id else None, "partner_name": roles.get("partner_name")})
+    return templates.TemplateResponse(request=request, name="pair.html", context={"request": request, "user": u, "couple": db.get(Couple, u.couple_id) if u.couple_id else None, "partner_name": roles.get("partner_name")})
 
 @app.post("/pair/create")
 def pair_create(request: Request, db: Session = Depends(get_db)):
@@ -189,7 +189,7 @@ def pair_join(request: Request, code: str = Form(...), db: Session = Depends(get
     u = current_user(request, db)
     if not u or u.couple_id: return redirect_to("/")
     couple = db.query(Couple).filter(Couple.code == (code or "").strip()).first()
-    if not couple: return templates.TemplateResponse("pair.html", {"request": request, "user": u, "error": "Código não encontrado."}, status_code=400)
+    if not couple: return templates.TemplateResponse(request=request, name="pair.html", context={"request": request, "user": u, "error": "Código não encontrado."}, status_code=400)
     u.couple_id = couple.id; db.commit()
     return redirect_to("/")
 
@@ -234,7 +234,7 @@ def home(request: Request, db: Session = Depends(get_db)):
 
     h = datetime.now().hour
     saudacao = "Bom dia" if 5<=h<12 else "Boa tarde" if 12<=h<18 else "Boa noite"
-    return templates.TemplateResponse("index.html", {
+    return templates.TemplateResponse(request=request, name="index.html", context={
         "request": request, "user": u, "partner_name": roles["partner_name"], "timeline": timeline, "diary_tags": DIARY_TAGS,
         "has_today": has_today, "synergy_percent": syn, "saudacao": saudacao, "ph_humor": random.choice(PROMPTS_HUMOR), "ph_momento": random.choice(PROMPTS_MOMENTO)
     })
@@ -269,7 +269,7 @@ def edit_entry_page(entry_id: int, request: Request, db: Session = Depends(get_d
     if not entry:
         return redirect_to("/")
 
-    return templates.TemplateResponse("edit_entry.html", {
+    return templates.TemplateResponse(request=request, name="edit_entry.html", context={
         "request": request,
         "user": u,
         "entry": entry,
@@ -332,7 +332,7 @@ def puxa_papo(request: Request, db: Session = Depends(get_db)):
     
     modes = [("divertidas", "😄 Divertidas"), ("romanticas", "💖 Românticas"), ("picantes_leves", "🔥 Picantes"), ("profundas", "🧠 Profundas")]
     
-    return templates.TemplateResponse("puxa_papo.html", {
+    return templates.TemplateResponse(request=request, name="puxa_papo.html", context={
         "request": request, "user": u, "partner_name": "", 
         "modes": modes, 
         "last": request.session.get("puxa_papo_last")
